@@ -15,8 +15,6 @@ public:
 	void printTime(const char *dispStr);
 };
 
-inline static float clamp(float val, float min, float max);
-
 #endif //YOLOV8_YOLOPOSE_H
 
 
