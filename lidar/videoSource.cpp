@@ -360,33 +360,40 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions *
 	getMouseEvent(&mouse_xpos, &mouse_ypos);
 
 	cv::Mat drawMat;
-
-	if( !appCfg->isRotate ){
-		cv::resize( grayMat, grayMat, cv::Size( DISPLAY_WIDTH, DISPLAY_HEIGHT ));
-		cv::resize( distMat, distMat, cv::Size( DISPLAY_WIDTH, DISPLAY_HEIGHT ));
-	}
-	else{
-		cv::resize( grayMat, grayMat, cv::Size( DISPLAY_HEIGHT, DISPLAY_WIDTH ));
-		cv::resize( distMat, distMat, cv::Size( DISPLAY_HEIGHT, DISPLAY_WIDTH ));
-	}
-
-	// draw people count
-	cv::Mat countBox = cv::Mat(MINIBOX_HEIGHT, MINIBOX_WIDTH, CV_8UC3, cv::Scalar(0, 0, 0));
-	std::string cntCaption = cv::format("%d", appCfg->detectingCnt);
-	if( appCfg->detectingCnt > 9 )
-		putText(countBox, cntCaption.c_str(), cv::Point(0, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 0, 255));
-	else
-		putText(countBox, cntCaption.c_str(), cv::Point(10, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 0, 255));
-	cv::Mat imageROI(grayMat, cv::Rect(grayMat.cols-countBox.cols, 0, countBox.cols, countBox.rows)); 
-	countBox.copyTo(imageROI);
+	int display_width = appCfg->isRotate ? DISPLAY_HEIGHT : DISPLAY_WIDTH;
+	int display_height = appCfg->isRotate ? DISPLAY_WIDTH : DISPLAY_HEIGHT;
 
 	// distance + gray image concat
+#ifdef HAVE_CV_CUDA
+	cv::cuda::GpuMat gpuGray(grayMat), gpuGrayImage, gpuDist(distMat), gpuDistImage;
+	cv::cuda::resize(gpuGray, gpuGrayImage, cv::Size( display_width, display_height ),  cv::INTER_LANCZOS4);
+	cv::cuda::resize(gpuDist, gpuDistImage, cv::Size( display_width, display_height ),  cv::INTER_LANCZOS4);
+
+	cv::cuda::GpuMat gpuHconcat (gpuGrayImage.rows, gpuGrayImage.cols * 2, gpuGrayImage.type());
+	gpuGrayImage.copyTo(gpuHconcat(cv::Rect(0,0,gpuGrayImage.cols, gpuGrayImage.rows)));
+	gpuDistImage.copyTo(gpuHconcat(cv::Rect(gpuGrayImage.cols, 0,gpuDistImage.cols, gpuDistImage.rows)));
+
+	gpuGrayImage.download(grayMat);
+	gpuHconcat.download(drawMat);
+#else
+	cv::resize( grayMat, grayMat, cv::Size( display_width, display_height ));
+	cv::resize( distMat, distMat, cv::Size( display_width, display_height ));
+
 	cv::hconcat(grayMat, distMat, drawMat);
+#endif
+
+	// draw people count
+	std::string cntCaption = cv::format("%d", appCfg->detectingCnt);
+	if( appCfg->detectingCnt > 9 )
+		putText(drawMat, cntCaption.c_str(), cv::Point(display_width-50, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 0));
+	else
+		putText(drawMat, cntCaption.c_str(), cv::Point(display_width-30, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 0));
+
 
 	// title & info 
-	cv::Mat viewInfoUpper(VIEW_INFO_UPPER_SIZE, grayMat.cols * 2, CV_8UC3, cv::Scalar(0,0,0));
-	cv::Mat viewInfoLower(VIEW_INFO_LOWER_SIZE, grayMat.cols * 2, CV_8UC3, cv::Scalar(255,255,255));
-	cv::Mat viewInfo(VIEW_INFO_Y_SIZE, grayMat.cols * 2, CV_8UC3, cv::Scalar(0,0,0));
+	cv::Mat viewInfoUpper(VIEW_INFO_UPPER_SIZE, drawMat.cols, CV_8UC3, cv::Scalar(0,0,0));
+	cv::Mat viewInfoLower(VIEW_INFO_LOWER_SIZE, drawMat.cols, CV_8UC3, cv::Scalar(255,255,255));
+	cv::Mat viewInfo(VIEW_INFO_Y_SIZE, drawMat.cols, CV_8UC3, cv::Scalar(0,0,0));
 
 	std::string dist_caption;
 	std::string defaultInfoTitle;
@@ -501,7 +508,6 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions *
 	
 #ifdef HAVE_CV_CUDA
 	cv::cuda::GpuMat gpuUpper(viewInfoUpper), gpuView(viewInfo), gpuLower(viewInfoLower), gpuImage(drawMat), gpuVconcat(drawMat.rows+viewInfoUpper.rows+viewInfoLower.rows+viewInfo.rows, drawMat.cols, drawMat.type());
-
 	gpuUpper.copyTo(gpuVconcat(cv::Rect(0, 0, gpuUpper.cols, gpuUpper.rows)));
 	gpuImage.copyTo(gpuVconcat(cv::Rect(0, gpuUpper.rows,gpuImage.cols, gpuImage.rows)));
 	gpuView.copyTo(gpuVconcat(cv::Rect(0, gpuUpper.rows+gpuImage.rows, gpuView.cols, gpuView.rows)));

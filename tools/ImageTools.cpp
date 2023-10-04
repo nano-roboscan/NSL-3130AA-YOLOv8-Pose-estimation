@@ -22,6 +22,21 @@
 
 #include "ImageTools.h"
 
+typedef enum pose_position_{
+	nose_position,
+	left_shoulder_position,
+	right_shoulder_position,
+	left_elbow_position,
+	right_elbow_position,
+	left_wrist_position,
+	right_wrist_position,
+	left_hip_position,
+	right_hip_position,
+	left_knee_position,
+	right_knee_position,
+	left_ankle_position,
+	right_ankle_position,
+}pose_position;
 
 void ImageTools::drawSkeleton(cv::Mat &image, YoloPose::Person &item)
 {
@@ -48,39 +63,38 @@ void ImageTools::drawSkeleton(cv::Mat &image, YoloPose::Person &item)
 	}
 	
 	cv::Point2d center_shoulder;
-	center_shoulder.x = item.kp[1].position.x + (item.kp[2].position.x - item.kp[1].position.x)/2 ;
-	center_shoulder.y = item.kp[1].position.y;
+	center_shoulder.x = item.kp[left_shoulder_position].position.x + (item.kp[right_shoulder_position].position.x - item.kp[left_shoulder_position].position.x)/2 ;
+	center_shoulder.y = item.kp[left_shoulder_position].position.y;
 	
 	cv::Point2d center_hip;
-	center_hip.x = item.kp[7].position.x + (item.kp[8].position.x - item.kp[7].position.x)/2 ;
-	center_hip.y = item.kp[7].position.y;
+	center_hip.x = item.kp[left_hip_position].position.x + (item.kp[right_hip_position].position.x - item.kp[left_hip_position].position.x)/2 ;
+	center_hip.y = item.kp[left_hip_position].position.y;
 	
 	cv::circle(image, center_shoulder, 3, poseColor, cv::FILLED);
 	cv::circle(image, center_hip, 3, poseColor, cv::FILLED);
 
 	// nose - shoulder
-	cv::line(image, item.kp[0].position, center_shoulder, poseColor, thickness);
-	
-	// shoulder
-	cv::line(image, item.kp[1].position, item.kp[2].position, poseColor, thickness);
-	// left arm
-	cv::line(image, item.kp[1].position, item.kp[3].position, poseColor, thickness);
-	cv::line(image, item.kp[3].position, item.kp[5].position, poseColor, thickness);
-	// right arm
-	cv::line(image, item.kp[2].position, item.kp[4].position, poseColor, thickness);
-	cv::line(image, item.kp[4].position, item.kp[6].position, poseColor, thickness);
-	
+	cv::line(image, item.kp[nose_position].position, center_shoulder, poseColor, thickness);
 	// center shoulder -> center hip
 	cv::line(image, center_shoulder, center_hip, poseColor, thickness);
 	
+	// shoulder
+	cv::line(image, item.kp[left_shoulder_position].position, item.kp[right_shoulder_position].position, poseColor, thickness);
+	// left arm
+	cv::line(image, item.kp[left_shoulder_position].position, item.kp[left_elbow_position].position, poseColor, thickness);
+	cv::line(image, item.kp[left_elbow_position].position, item.kp[left_wrist_position].position, poseColor, thickness);
+	// right arm
+	cv::line(image, item.kp[right_shoulder_position].position, item.kp[right_elbow_position].position, poseColor, thickness);
+	cv::line(image, item.kp[right_elbow_position].position, item.kp[right_wrist_position].position, poseColor, thickness);
+	
 	// hip
-	cv::line(image, item.kp[7].position, item.kp[8].position, poseColor, thickness);
+	cv::line(image, item.kp[left_hip_position].position, item.kp[right_hip_position].position, poseColor, thickness);
 	// left leg
-	cv::line(image, item.kp[7].position, item.kp[9].position, poseColor, thickness);
-	cv::line(image, item.kp[9].position, item.kp[11].position, poseColor, thickness);
+	cv::line(image, item.kp[left_hip_position].position, item.kp[left_knee_position].position, poseColor, thickness);
+	cv::line(image, item.kp[left_knee_position].position, item.kp[left_ankle_position].position, poseColor, thickness);
 	// right leg
-	cv::line(image, item.kp[8].position, item.kp[10].position, poseColor, thickness);
-	cv::line(image, item.kp[10].position, item.kp[12].position, poseColor, thickness);
+	cv::line(image, item.kp[right_hip_position].position, item.kp[right_knee_position].position, poseColor, thickness);
+	cv::line(image, item.kp[right_knee_position].position, item.kp[right_ankle_position].position, poseColor, thickness);
 }
 
 

@@ -89,7 +89,7 @@ int YoloPose::detect(cv::Mat &mat)
             bbox.width = x1 - x0;
             bbox.height = y1 - y0;
 
-            std::vector<Keypoint> kps;
+			std::vector<Keypoint> kps;
 
 			/*
 				0 : nose
