@@ -16,6 +16,12 @@ $ cd NSL-3130AA-YOLOv8-Pose-estimation/data
 $ wget https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-csp.weights
 ```
 
+## Required OpenCV
+```
+- Required OpenCV 4.7
+```
+
+
 ## LINUX compile
 ```
 $ cd NSL-3130AA-YOLOv8-Pose-estimation/
