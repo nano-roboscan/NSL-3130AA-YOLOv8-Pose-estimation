@@ -1,4 +1,4 @@
-# NSL-3130AA-YOLOv8-Pose-estimation
+# NSL-3130AA-YOLOv8-Pose-estimation(OpenCV)
 YOLOv8-Pose-estimation + object detection + people counting
 
 ## USB rules
