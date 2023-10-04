@@ -31,3 +31,5 @@ $ cmake ..
 $ make
 $ ./yolov8 or ./yolov8 -modelType 2 ipaddr xxx.xxx.xxx.xxx or ./yolov8 ipaddr /dev/ttyLidar or ./yolov8 -help
 ```
+
+![draw](https://github.com/nano-roboscan/NSL-3130AA-YOLOv8-Pose-estimation/assets/106071093/aa0c9a32-9da6-4003-a694-5d73ecd1f474)
