@@ -138,7 +138,7 @@ static int maxDistanceValue = 12500;
 static int maxAmplitudeValue = 2897;
 static int maxValidValue = 15000;
 
-static const int indexAmplitudeFactorColor = TOF660_NUM_COLORS / maxAmplitudeValue;
+static const int indexAmplitudeFactorColor = NSL3130_NUM_COLORS / maxAmplitudeValue;
 
 static uint8_t initialCode660[][100]={	
 //	 | ------- start marker --------| |--- length(opcode+data) -----| |-- opcode--| |------- data feild -----------| |-------- end marker --------|
@@ -184,7 +184,7 @@ bool NSL3130AA::lengthIsCorrect(unsigned char * data, int data_len)
 
 bool NSL3130AA::isValidData(unsigned char *data, int data_len)
 {
-    if(data_len < TOF660_HEADER_SIZE)
+    if(data_len < NSL3130_NET_HEADER_SIZE)
         return false;
 
     if(hasValidStartMarking(data, data_len) == false)
@@ -403,13 +403,13 @@ int NSL3130AA::recvFromTcp(SOCKET sock, uint8_t *total_buf)
 
 void NSL3130AA::setGrayScaledColor(cv::Mat &imageLidar, int x, int y, int value, double end_range )
 {
-	if (value == TOF660_SATURATION)
+	if (value == NSL3130_SATURATION)
 	{
 		imageLidar.at<Vec3b>(y, x)[0] = 128;
 		imageLidar.at<Vec3b>(y, x)[1] = 0;
 		imageLidar.at<Vec3b>(y, x)[2] = 255; 
 	}
-	else if (value == TOF660_ADC_OVERFLOW)
+	else if (value == NSL3130_ADC_OVERFLOW)
 	{
 		imageLidar.at<Vec3b>(y, x)[0] = 255;
 		imageLidar.at<Vec3b>(y, x)[1] = 14;
@@ -439,37 +439,37 @@ void NSL3130AA::setGrayScaledColor(cv::Mat &imageLidar, int x, int y, int value,
 
 int NSL3130AA::setDistanceColor(cv::Mat &imageLidar, int x, int y, int value )
 {
-	if( value == TOF660_LOW_AMPLITUDE )
+	if( value == NSL3130_LOW_AMPLITUDE )
 	{
 		imageLidar.at<Vec3b>(y, x)[0] = 0;
 		imageLidar.at<Vec3b>(y, x)[1] = 0;
 		imageLidar.at<Vec3b>(y, x)[2] = 0; 
 	}
-	else if (value == TOF660_SATURATION)
+	else if (value == NSL3130_SATURATION)
 	{
 		imageLidar.at<Vec3b>(y, x)[0] = 128;
 		imageLidar.at<Vec3b>(y, x)[1] = 0;
 		imageLidar.at<Vec3b>(y, x)[2] = 255; 
 	}
-	else if (value == TOF660_ADC_OVERFLOW)
+	else if (value == NSL3130_ADC_OVERFLOW)
 	{
 		imageLidar.at<Vec3b>(y, x)[0] = 255;
 		imageLidar.at<Vec3b>(y, x)[1] = 14;
 		imageLidar.at<Vec3b>(y, x)[2] = 169; 
 	}
-	else if(value == TOF660_INTERFERENCE)
+	else if(value == NSL3130_INTERFERENCE)
 	{
 		imageLidar.at<Vec3b>(y, x)[0] = 0;
 		imageLidar.at<Vec3b>(y, x)[1] = 0;
 		imageLidar.at<Vec3b>(y, x)[2] = 0; 
 	}
-	else if (value == TOF660_EDGE_DETECTED)
+	else if (value == NSL3130_EDGE_DETECTED)
 	{
 		imageLidar.at<Vec3b>(y, x)[0] = 0;
 		imageLidar.at<Vec3b>(y, x)[1] = 0;
 		imageLidar.at<Vec3b>(y, x)[2] = 0; 
 	}
-	else if (value == TOF660_BAD)
+	else if (value == NSL3130_BAD)
 	{
 		imageLidar.at<Vec3b>(y, x)[0] = 0;
 		imageLidar.at<Vec3b>(y, x)[1] = 0;
@@ -495,7 +495,7 @@ int NSL3130AA::setDistanceColor(cv::Mat &imageLidar, int x, int y, int value )
 		imageLidar.at<Vec3b>(y, x)[2] = 0; 
 	}
 	else{
-		int index = (int)colorVector.size() - (value*(TOF660_NUM_COLORS / maxDistanceValue));
+		int index = (int)colorVector.size() - (value*(NSL3130_NUM_COLORS / maxDistanceValue));
 		if( index < 0 ){
 			printf("error index = %d\n", index);
 			index = (int)colorVector.size()-1;
@@ -512,37 +512,37 @@ int NSL3130AA::setDistanceColor(cv::Mat &imageLidar, int x, int y, int value )
 
 void NSL3130AA::setAmplitudeColor(cv::Mat &imageLidar, int x, int y, int value )
 {
-	if( value == TOF660_LOW_AMPLITUDE )
+	if( value == NSL3130_LOW_AMPLITUDE )
 	{
 		imageLidar.at<Vec3b>(y, x)[0] = 0;
 		imageLidar.at<Vec3b>(y, x)[1] = 0;
 		imageLidar.at<Vec3b>(y, x)[2] = 0; 
 	}
-	else if (value == TOF660_SATURATION)
+	else if (value == NSL3130_SATURATION)
 	{
 		imageLidar.at<Vec3b>(y, x)[0] = 128;
 		imageLidar.at<Vec3b>(y, x)[1] = 0;
 		imageLidar.at<Vec3b>(y, x)[2] = 255; 
 	}
-	else if (value == TOF660_ADC_OVERFLOW)
+	else if (value == NSL3130_ADC_OVERFLOW)
 	{
 		imageLidar.at<Vec3b>(y, x)[0] = 255;
 		imageLidar.at<Vec3b>(y, x)[1] = 14;
 		imageLidar.at<Vec3b>(y, x)[2] = 169; 
 	}
-	else if(value == TOF660_INTERFERENCE)
+	else if(value == NSL3130_INTERFERENCE)
 	{
 		imageLidar.at<Vec3b>(y, x)[0] = 0;
 		imageLidar.at<Vec3b>(y, x)[1] = 0;
 		imageLidar.at<Vec3b>(y, x)[2] = 0; 
 	}
-	else if (value == TOF660_EDGE_DETECTED)
+	else if (value == NSL3130_EDGE_DETECTED)
 	{
 		imageLidar.at<Vec3b>(y, x)[0] = 0;
 		imageLidar.at<Vec3b>(y, x)[1] = 0;
 		imageLidar.at<Vec3b>(y, x)[2] = 0; 
 	}
-	else if (value == TOF660_BAD)
+	else if (value == NSL3130_BAD)
 	{
 		imageLidar.at<Vec3b>(y, x)[0] = 0;
 		imageLidar.at<Vec3b>(y, x)[1] = 0;
@@ -588,7 +588,7 @@ int NSL3130AA::getDistanceAmplitude(cv::Mat &imageDistance, cv::Mat &imageAmplit
 	//uint16_t *pixelPtr = (uint16_t *)&procBuff[1][tofcamInfo.header.offset];
 
 	if( tofcamInfo.config.hdr_mode == HDR_SPATIAL_MODE 
-		&& tofcamInfo.header.height <= (TOF660_IMAGE_HEIGHT>>1) )
+		&& tofcamInfo.header.height <= (NSL3130_IMAGE_HEIGHT>>1) )
 	{
 		stepY = 2;
 		maxHeight <<= 1;
@@ -616,11 +616,11 @@ int NSL3130AA::getDistanceAmplitude(cv::Mat &imageDistance, cv::Mat &imageAmplit
 			else 
 				setAmplitudeColor(imageAmplitude, x, y, pixelAmplitude);
 
-			distanceTable[y*TOF660_IMAGE_WIDTH+x] = pixelDistance;
+			distanceTable[y*NSL3130_IMAGE_WIDTH+x] = pixelDistance;
 
 
 			if(stepY==2){
-				distanceTable[(y+1)*TOF660_IMAGE_WIDTH+x] = pixelDistance;
+				distanceTable[(y+1)*NSL3130_IMAGE_WIDTH+x] = pixelDistance;
 
 				if( tofcamInfo.tofcamModeType == AMPLITEDE_DISTANCE_EX_MODE ) 
 					setGrayScaledColor(imageAmplitude, x, y+1, pixelAmplitude, maxAmplitudeValue);
@@ -639,7 +639,7 @@ int NSL3130AA::getDistanceAmplitude(cv::Mat &imageDistance, cv::Mat &imageAmplit
 
 				double outX = 0.0f, outY = 0.0f, outZ = 0.0f;
 
-				if( pixelDistance < TOF660_LIMIT_FOR_VALID_DATA ){
+				if( pixelDistance < NSL3130_LIMIT_FOR_VALID_DATA ){
 					lensTransform.transformPixel(tofcamInfo.config.roi_xMin+x, tofcamInfo.config.roi_yMin+y, pixelDistance, outX, outY, outZ, sin_angle, cos_angle);
 				}
 				
@@ -684,7 +684,7 @@ int NSL3130AA::getGrayscaled(cv::Mat &imageLidar, bool bUsedPointCloud)
 	int stepY = 1;
 	
 	if( tofcamInfo.config.hdr_mode == HDR_SPATIAL_MODE 
-		&& tofcamInfo.header.height <= (TOF660_IMAGE_HEIGHT>>1) )
+		&& tofcamInfo.header.height <= (NSL3130_IMAGE_HEIGHT>>1) )
 	{
 		stepY = 2;
 		maxHeight <<= 1;
@@ -705,7 +705,7 @@ int NSL3130AA::getGrayscaled(cv::Mat &imageLidar, bool bUsedPointCloud)
 			if( tofcamInfo.tofcamModeType == GRAYSCALE_MODE )
 				setGrayScaledColor( imageLidar, x, y, pixelGrayscale, 2048.0);
 			else{ // DISTANCE_MODE
-				distanceTable[y*TOF660_IMAGE_WIDTH+x] = pixelGrayscale;
+				distanceTable[y*NSL3130_IMAGE_WIDTH+x] = pixelGrayscale;
 				setDistanceColor(imageLidar, x, y, pixelGrayscale);
 			}
 
@@ -713,7 +713,7 @@ int NSL3130AA::getGrayscaled(cv::Mat &imageLidar, bool bUsedPointCloud)
 				if( tofcamInfo.tofcamModeType == GRAYSCALE_MODE )
 					setGrayScaledColor( imageLidar, x, y+1, pixelGrayscale, 2048.0);
 				else{
-					distanceTable[(y+1)*TOF660_IMAGE_WIDTH+x] = pixelGrayscale;
+					distanceTable[(y+1)*NSL3130_IMAGE_WIDTH+x] = pixelGrayscale;
 					setDistanceColor(imageLidar, x, y+1, pixelGrayscale);
 				}
 			}
@@ -726,7 +726,7 @@ int NSL3130AA::getGrayscaled(cv::Mat &imageLidar, bool bUsedPointCloud)
 
 					double outX = 0.0f, outY = 0.0f, outZ = 0.0f;
 
-					if( pixelGrayscale < TOF660_LIMIT_FOR_VALID_DATA ){
+					if( pixelGrayscale < NSL3130_LIMIT_FOR_VALID_DATA ){
 						lensTransform.transformPixel(tofcamInfo.config.roi_xMin+x, tofcamInfo.config.roi_yMin+y, pixelGrayscale, outX, outY, outZ, sin_angle, cos_angle);
 					}
 					
@@ -1077,7 +1077,7 @@ SOCKET NSL3130AA::InitializeControlsocket(void)
 	struct sockaddr_in   server_addr;
 	memset(&server_addr, 0, sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(TOF660_PORT);
+	server_addr.sin_port = htons(NSL3130_NET_PORT);
 	server_addr.sin_addr.s_addr = inet_addr(mIpaddr.c_str());
 
 	control_sock = socket(PF_INET, SOCK_STREAM, 0);
@@ -1292,7 +1292,7 @@ uint8_t *NSL3130AA::convertParameterFromConfig(uint8_t *pData, int nLen)
 
 void NSL3130AA::initializeTofcam660(SOCKET socket)
 {	
-	int numSteps = TOF660_NUM_COLORS;
+	int numSteps = NSL3130_NUM_COLORS;
 	unsigned char red, green, blue;
 
 	for(int i=0;  i< numSteps; i++)
@@ -1381,7 +1381,7 @@ void NSL3130AA::rxSocket(uint8_t *socketbuff, int buffLen)
 		tofcamBuff.bufGrayLen[tofcamBuff.head_idx] = 0; 				
 		memcpy(tofcamBuff.tofcamBuf[tofcamBuff.head_idx], response[1], totalLen);
 		tofcamBuff.bufLen[tofcamBuff.head_idx] = totalLen;
-		ADD_TOFCAM_BUFF(tofcamBuff, TOFCAM_ETH_BUFF_SIZE);
+		ADD_TOFCAM_BUFF(tofcamBuff, NSL3130_ETH_BUFF_SIZE);
 
 		LeaveCriticalSection(&tofcamBuff.lock);
 	}
@@ -1550,7 +1550,7 @@ void NSL3130AA::keyProc()
 
 void *NSL3130AA::rxTofcam660(void *arg) 
 {	
-	static uint8_t socketbuff[TOF660_BUFF_SIZE];
+	static uint8_t socketbuff[NSL3130_BUFF_SIZE];
 
 	while(!exit_thtread)
 	{
@@ -1565,15 +1565,17 @@ void *NSL3130AA::rxTofcam660(void *arg)
 #ifndef _WINDOWS
 		if( ttySerial ) {
 
-			int expectedRcvLen = 307238;
-			if( tofcamInfo.tofcamModeType == AMPLITEDE_DISTANCE_MODE
+			int expectedRcvLen = 307238; // 4 * NSL3130_IMAGE_WIDTH * NSL3130_IMAGE_HEIGHT + UART_OVERHEAD_SIZE + DATA_HEADER_SIZE;
+			if( tofcamInfo.tofcamModeType == DISTANCE_MODE || tofcamInfo.tofcamModeType == GRAYSCALE_MODE ){
+				expectedRcvLen = 2 * NSL3130_IMAGE_WIDTH * NSL3130_IMAGE_HEIGHT + UART_OVERHEAD_SIZE + DATA_HEADER_SIZE;
+			}
+/*
+			else if( tofcamInfo.tofcamModeType == AMPLITEDE_DISTANCE_MODE
 				|| tofcamInfo.tofcamModeType == DISTANCE_GRAYSCALE_MODE
 				|| tofcamInfo.tofcamModeType == AMPLITEDE_DISTANCE_EX_MODE ){
-				expectedRcvLen = 4 * TOF660_IMAGE_WIDTH * TOF660_IMAGE_HEIGHT + 13 + 25;
+				expectedRcvLen = 4 * NSL3130_IMAGE_WIDTH * NSL3130_IMAGE_HEIGHT + UART_OVERHEAD_SIZE + DATA_HEADER_SIZE;
 			}
-			else if( tofcamInfo.tofcamModeType == DISTANCE_MODE || tofcamInfo.tofcamModeType == GRAYSCALE_MODE ){
-				expectedRcvLen = 2 * TOF660_IMAGE_WIDTH * TOF660_IMAGE_HEIGHT + 13 + 25;
-			}
+*/			
 
 			reqSingleFrame(tofcamInfo.control_sock, tofcamInfo.tofcamModeType);
 			if( rxSerial(socketbuff, expectedRcvLen, true) < 0 ){
@@ -1603,8 +1605,8 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr NSL3130AA::pcbVis()
 	point_cloud_ptr->clear();
 	point_cloud_ptr->is_dense = false;
 	//point_cloud_ptr->reserve(IMAGE_WIDTH * IMAGE_HEIGHT);
-	point_cloud_ptr->width = TOF660_IMAGE_WIDTH;
-	point_cloud_ptr->height = TOF660_IMAGE_HEIGHT;
+	point_cloud_ptr->width = NSL3130_IMAGE_WIDTH;
+	point_cloud_ptr->height = NSL3130_IMAGE_HEIGHT;
 
 	return point_cloud_ptr;
 }
@@ -1804,7 +1806,7 @@ int NSL3130AA::rxSerial(uint8_t *socketbuff, int buffLen, bool addQue)
 			tofcamBuff.bufGrayLen[tofcamBuff.head_idx] = 0;
 			memcpy(tofcamBuff.tofcamBuf[tofcamBuff.head_idx], &socketbuff[9], buffLen-13);
 			tofcamBuff.bufLen[tofcamBuff.head_idx] = buffLen;
-			ADD_TOFCAM_BUFF(tofcamBuff, TOFCAM_ETH_BUFF_SIZE);
+			ADD_TOFCAM_BUFF(tofcamBuff, NSL3130_ETH_BUFF_SIZE);
 			
 			pthread_mutex_unlock(&tofcamBuff.lock);
 		}
@@ -1899,32 +1901,32 @@ NSL3130AA* NSL3130AA::Create( std::string ipaddr )
 
 int NSL3130AA::getVideoWidth(){
 	if( tofcamInfo.rotate_90 != 0 ){
-		return TOF660_IMAGE_HEIGHT;
+		return NSL3130_IMAGE_HEIGHT;
 	}
-	return TOF660_IMAGE_WIDTH;
+	return NSL3130_IMAGE_WIDTH;
 }
 
 int NSL3130AA::getVideoHeight(){
 	if( tofcamInfo.rotate_90 != 0 ){
-		return TOF660_IMAGE_WIDTH;
+		return NSL3130_IMAGE_WIDTH;
 	}
-	return TOF660_IMAGE_HEIGHT;
+	return NSL3130_IMAGE_HEIGHT;
 }
 
 int NSL3130AA::getWidthDiv()				
 { 
 	if( tofcamInfo.rotate_90 != 0 ){
-		return tofcamInfo.height/TOF660_IMAGE_HEIGHT;
+		return tofcamInfo.height/NSL3130_IMAGE_HEIGHT;
 	}
-	return tofcamInfo.width/TOF660_IMAGE_WIDTH; 
+	return tofcamInfo.width/NSL3130_IMAGE_WIDTH; 
 }
 
 int NSL3130AA::getHeightDiv()
 {
 	if( tofcamInfo.rotate_90 != 0 ){
-		return tofcamInfo.width/TOF660_IMAGE_WIDTH;
+		return tofcamInfo.width/NSL3130_IMAGE_WIDTH;
 	}
-	return tofcamInfo.height/TOF660_IMAGE_HEIGHT; 
+	return tofcamInfo.height/NSL3130_IMAGE_HEIGHT; 
 }
 
 void NSL3130AA::setCameraSize(int width, int height)
@@ -1978,17 +1980,17 @@ std::string NSL3130AA::getDistanceString(int distance )
 {
 	std::string distStr;
 
-	if( distance == TOF660_LOW_AMPLITUDE || distance == 300000 )
+	if( distance == NSL3130_LOW_AMPLITUDE || distance == 300000 )
 		distStr = "LOW_AMPLITUDE";
-	else if( distance == TOF660_ADC_OVERFLOW )
+	else if( distance == NSL3130_ADC_OVERFLOW )
 		distStr = "ADC_OVERFLOW";
-	else if( distance == TOF660_SATURATION )
+	else if( distance == NSL3130_SATURATION )
 		distStr = "SATURATION";
-	else if( distance == TOF660_INTERFERENCE )
+	else if( distance == NSL3130_INTERFERENCE )
 		distStr = "INTERFERENCE";
-	else if( distance == TOF660_EDGE_DETECTED )
+	else if( distance == NSL3130_EDGE_DETECTED )
 		distStr = "EDGE_DETECTED";
-	else if( distance == TOF660_BAD )
+	else if( distance == NSL3130_BAD )
 		distStr = "BAD_FIXEL";
 	else
 		distStr = format("%d mm", distance);
@@ -2022,7 +2024,7 @@ bool NSL3130AA::Capture( void** output, int timeout )
 	int frame_cnt = 0;
 	while(!exit_thtread)
 	{
-		if( GET_BUFF_CNT(tofcamBuff, TOFCAM_ETH_BUFF_SIZE) > 0 ){
+		if( GET_BUFF_CNT(tofcamBuff, NSL3130_ETH_BUFF_SIZE) > 0 ){
 
 #ifdef __REAL_IMAGE_TEST__
 			nReadCnt = findFileName("/home/nanosystem/disk/img/", tofcamImage.localFileName, nReadCnt);
@@ -2044,14 +2046,14 @@ bool NSL3130AA::Capture( void** output, int timeout )
 			cv::resize( image, image, cv::Size( 320, 240 ), 0, 0, cv::INTER_LANCZOS4 );// INTER_CUBIC , INTER_LANCZOS4 
 			cv::resize( imageDist, imageDist, cv::Size( 320, 240 ), 0, 0, cv::INTER_LANCZOS4 );// INTER_CUBIC , INTER_LANCZOS4 
 #else
-			cv::Mat image(TOF660_IMAGE_HEIGHT, TOF660_IMAGE_WIDTH, CV_8UC3, Scalar(255,255,255));	
-			cv::Mat imageDist(TOF660_IMAGE_HEIGHT, TOF660_IMAGE_WIDTH, CV_8UC3, Scalar(255,255,255));			
+			cv::Mat image(NSL3130_IMAGE_HEIGHT, NSL3130_IMAGE_WIDTH, CV_8UC3, Scalar(255,255,255));	
+			cv::Mat imageDist(NSL3130_IMAGE_HEIGHT, NSL3130_IMAGE_WIDTH, CV_8UC3, Scalar(255,255,255));			
 
 			EnterCriticalSection(&tofcamBuff.lock);
 			//printf("main-bufLen = %d:%d\n", tofcamBuff.bufGrayLen[tofcamBuff.tail_idx], tofcamBuff.bufLen[tofcamBuff.tail_idx]);
 			if( tofcamBuff.bufGrayLen[tofcamBuff.tail_idx] > 0 ) memcpy(procBuff[0], tofcamBuff.tofcamGrayBuf[tofcamBuff.tail_idx], tofcamBuff.bufGrayLen[tofcamBuff.tail_idx]);
 			memcpy(procBuff[1], tofcamBuff.tofcamBuf[tofcamBuff.tail_idx], tofcamBuff.bufLen[tofcamBuff.tail_idx]);
-			POP_TOFCAM_BUFF(tofcamBuff, TOFCAM_ETH_BUFF_SIZE);
+			POP_TOFCAM_BUFF(tofcamBuff, NSL3130_ETH_BUFF_SIZE);
 
 			LeaveCriticalSection(&tofcamBuff.lock);
 
