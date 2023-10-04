@@ -6,10 +6,10 @@ import numpy as np
 from ultralytics import YOLO
 
 # Load the YOLOv8 model
-model = YOLO('yolov8s.pt')
+model = YOLO('yolov8n.pt')
 
 # Open the video file
-video_path = "/home/nanosystem/yolov8/720.mp4"
+video_path = "./sample.mp4"
 cap = cv2.VideoCapture(video_path)
 
 # Store the track history

@@ -1,12 +1,11 @@
-import cv3
+import cv2
 from ultralytics import YOLO
 
 # Load the YOLOv8 model
 model = YOLO('yolov8n.pt')
 
 # Open the video file
-#video_path = "/home/nanosystem/yolov8/720.mp4"
-video_path = "/home/nanosystem/yolov8/project.avi"
+video_path = "./sample.mp4"
 cap = cv2.VideoCapture(video_path)
 
 # Loop through
