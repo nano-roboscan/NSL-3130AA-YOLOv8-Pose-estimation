@@ -98,13 +98,15 @@ public:
 	virtual void startCaptureCommand( int netType, void *pCapOpt) = 0;
 	virtual void setKey(int cmdKey) = 0;
 	virtual std::string getDistanceString(int distance ) = 0;
+	virtual int getDLWidth() = 0;
+	virtual int getDLHeight() = 0;
+	virtual int getWidth() = 0;
+	virtual int getHeight() = 0;
 	virtual int getVideoWidth() = 0;
 	virtual int getVideoHeight() = 0;	
 	virtual int getWidthDiv() = 0;
 	virtual int getHeightDiv() = 0;
 	virtual void setCameraSize(int width, int height) = 0;
-	virtual int getWidth() = 0;
-	virtual int getHeight() = 0;
 	virtual bool isRotate90() = 0;	
 	virtual void closeLidar() = 0;
 	virtual std::string getLeftViewName() = 0;

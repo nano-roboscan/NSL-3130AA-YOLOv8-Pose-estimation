@@ -305,14 +305,16 @@ public:
 	virtual void startCaptureCommand( int netType, void *pCapOpt) ;
 	virtual void setKey(int cmdKey);
 	virtual std::string getDistanceString(int distance );
+	virtual int getDLWidth();
+	virtual int getDLHeight();
+	virtual int getWidth();
+	virtual int getHeight();
 	virtual int getVideoWidth();
 	virtual int getVideoHeight();
 	virtual bool isRotate90();
 	virtual int getWidthDiv();
 	virtual int getHeightDiv();
 	virtual void setCameraSize(int width, int height);
-	virtual int getWidth();
-	virtual int getHeight();
 	virtual std::string getLeftViewName();
 	virtual void drawPointCloud();
 	/**
@@ -358,7 +360,7 @@ private:
 	void reqFilterParameter(SOCKET control_sock);
 	void reqMinAmplitude(SOCKET control_sock);
 	void reqSetROI(SOCKET control_sock);
-	void reqGrayscaleLedControl(SOCKET control_sock);
+	void reqGrayscaleLedControl(SOCKET control_sock, int ledOnOff);
 	void reqDualBeam(int control_sock);
 	void reqDeepLearning(int control_sock);
 

@@ -49,6 +49,7 @@
 #ifdef HAVE_CV_CUDA
 #include <opencv2/cudawarping.hpp>
 #endif
+#include "timecheck.h"
 
 using namespace cv;
 
@@ -1058,12 +1059,14 @@ void NSL3130AA::reqSetROI(SOCKET control_sock)
 	printf("reqSetROI rotate 90 : %d\n", tofcamInfo.rotate_90);
 }
 
-void NSL3130AA::reqGrayscaleLedControl(SOCKET control_sock)
+void NSL3130AA::reqGrayscaleLedControl(SOCKET control_sock, int ledOnOff)
 {
 	uint8_t data[] = {0x00 ,0x27 ,0x01};
 	uint32_t data_len = 3;	
 
-	data[2] = tofcamInfo.led_control;	// ON : 1, OFF : 0
+	tofcamInfo.led_control = ledOnOff;	// ON : 1, OFF : 0
+
+	data[2] = ledOnOff;
 	
 	int bComplete = sendToDev(control_sock, data, data_len, 14);
 	printf("reqGrayscaleLedControl : read data complete = %d bOn = %d\n", bComplete, tofcamInfo.led_control);
@@ -1337,7 +1340,6 @@ void NSL3130AA::rxSocket(uint8_t *socketbuff, int buffLen)
 
 	do
 	{
-#if 1	
 		FD_ZERO(&readfds);
 		FD_SET(tofcamInfo.data_sock, &readfds);
 		timeout.tv_sec = 0;
@@ -1352,7 +1354,7 @@ void NSL3130AA::rxSocket(uint8_t *socketbuff, int buffLen)
 			printf("rxSock datagrame no response state = %d sock = %d\n", state, tofcamInfo.data_sock);
 			return;
 		}
-#endif		
+
 		addr_size = sizeof(si_other);
 		int data_len = recvfrom(tofcamInfo.data_sock, (char *)socketbuff, 1500, 0, (struct sockaddr*)&si_other, &addr_size);
 		if (data_len > 0)
@@ -1372,10 +1374,6 @@ void NSL3130AA::rxSocket(uint8_t *socketbuff, int buffLen)
 
 	if( !exit_thtread )
 	{
-//		const auto& time_cap1 = std::chrono::steady_clock::now();
-//		double time_cam = (time_cap1 - time_cap0).count() / 1000000.0;
-//		printf("  Tofcam-Rx:		   %9.3lf [msec] len = %d\n", time_cam, totalLen);		// 75ms
-
 		EnterCriticalSection(&tofcamBuff.lock);
 
 		tofcamBuff.bufGrayLen[tofcamBuff.head_idx] = 0; 				
@@ -1400,6 +1398,7 @@ void NSL3130AA::keyProc()
 			{
 				tofcamInfo.tofcamModeType = GRAYSCALE_MODE;
 #ifdef __STREAMING_COMMAND__
+				reqGrayscaleLedControl(tofcamInfo.control_sock, 0);
 				if( ttySerial == false ) reqStreamingFrame(tofcamInfo.control_sock);
 #endif
 			}
@@ -1410,6 +1409,7 @@ void NSL3130AA::keyProc()
 			if( tofcamInfo.tofcamModeType != DISTANCE_GRAYSCALE_MODE ){
 				tofcamInfo.tofcamModeType = DISTANCE_GRAYSCALE_MODE;
 #ifdef __STREAMING_COMMAND__
+				reqGrayscaleLedControl(tofcamInfo.control_sock, 1);
 				if( ttySerial == false ) reqStreamingFrame(tofcamInfo.control_sock);
 #endif
 			}
@@ -1420,6 +1420,7 @@ void NSL3130AA::keyProc()
 			if( tofcamInfo.tofcamModeType != AMPLITEDE_DISTANCE_EX_MODE ){
 				tofcamInfo.tofcamModeType = AMPLITEDE_DISTANCE_EX_MODE;
 #ifdef __STREAMING_COMMAND__
+				reqGrayscaleLedControl(tofcamInfo.control_sock, 0);
 				if( ttySerial == false ) reqStreamingFrame(tofcamInfo.control_sock);
 #endif
 			}
@@ -1430,6 +1431,7 @@ void NSL3130AA::keyProc()
 			if( tofcamInfo.tofcamModeType != AMPLITEDE_DISTANCE_MODE ){
 				tofcamInfo.tofcamModeType = AMPLITEDE_DISTANCE_MODE;
 #ifdef __STREAMING_COMMAND__
+				reqGrayscaleLedControl(tofcamInfo.control_sock, 0);
 				if( ttySerial == false ) reqStreamingFrame(tofcamInfo.control_sock);
 #endif
 			}
@@ -1514,9 +1516,8 @@ void NSL3130AA::keyProc()
 #endif
 		}
 		else if ( tofcamInfo.tofcamEvent_key == 't'){
-			tofcamInfo.led_control = tofcamInfo.led_control ? 0 : 1;
-
-			reqGrayscaleLedControl(tofcamInfo.control_sock);
+			tofcamInfo.led_control ^= 1;
+			reqGrayscaleLedControl(tofcamInfo.control_sock, tofcamInfo.led_control);
 		}
 		else if ( tofcamInfo.tofcamEvent_key == 'p' ){
 			tofcamInfo.usedPointCloud = tofcamInfo.usedPointCloud ? 0 : 1; 
@@ -1916,27 +1917,39 @@ int NSL3130AA::getVideoHeight(){
 int NSL3130AA::getWidthDiv()				
 { 
 	if( tofcamInfo.rotate_90 != 0 ){
-		return tofcamInfo.height/NSL3130_IMAGE_HEIGHT;
+		return DISPLAY_HEIGHT/NSL3130_IMAGE_HEIGHT;
 	}
-	return tofcamInfo.width/NSL3130_IMAGE_WIDTH; 
+	return DISPLAY_WIDTH/NSL3130_IMAGE_WIDTH; 
 }
 
 int NSL3130AA::getHeightDiv()
 {
 	if( tofcamInfo.rotate_90 != 0 ){
-		return tofcamInfo.width/NSL3130_IMAGE_WIDTH;
+		return DISPLAY_WIDTH/NSL3130_IMAGE_WIDTH;
 	}
-	return tofcamInfo.height/NSL3130_IMAGE_HEIGHT; 
+	return DISPLAY_HEIGHT/NSL3130_IMAGE_HEIGHT; 
 }
-
-void NSL3130AA::setCameraSize(int width, int height)
-{
-	tofcamInfo.width = width;
-	tofcamInfo.height = height;
-}
-
 
 int NSL3130AA::getWidth()				
+{ 
+	if( tofcamInfo.rotate_90 != 0 ){
+		return DISPLAY_HEIGHT;
+	}
+	return DISPLAY_WIDTH; 
+}
+
+/**
+ * Return the height of the stream, in pixels.
+ */
+int NSL3130AA::getHeight()
+{
+	if( tofcamInfo.rotate_90 != 0 ){
+		return DISPLAY_WIDTH;
+	}
+	return DISPLAY_HEIGHT; 
+}
+
+int NSL3130AA::getDLWidth()				
 { 
 	if( tofcamInfo.rotate_90 != 0 ){
 		return tofcamInfo.height;
@@ -1947,13 +1960,20 @@ int NSL3130AA::getWidth()
 /**
  * Return the height of the stream, in pixels.
  */
-int NSL3130AA::getHeight()
+int NSL3130AA::getDLHeight()
 {
 	if( tofcamInfo.rotate_90 != 0 ){
 		return tofcamInfo.width;
 	}
 	return tofcamInfo.height; 
 }
+
+void NSL3130AA::setCameraSize(int width, int height)
+{
+	tofcamInfo.width = width;
+	tofcamInfo.height = height;
+}
+
 
 
 
@@ -2019,12 +2039,24 @@ bool NSL3130AA::Capture( void** output, int timeout )
 	if( !output )
 		return false;
 
+	TimeCheck tmChk;
+	tmChk.setPrint(false);
+	tmChk.setBegin();
+
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 	
 	int frame_cnt = 0;
 	while(!exit_thtread)
 	{
-		if( GET_BUFF_CNT(tofcamBuff, NSL3130_ETH_BUFF_SIZE) > 0 ){
+		if( GET_BUFF_CNT(tofcamBuff, NSL3130_ETH_BUFF_SIZE) > 0
+#ifdef __REAL_IMAGE_TEST__
+			|| true
+#endif
+		){
+			tmChk.setEnd();
+			tmChk.printTime("RxTime");
+
+			tmChk.setBegin();
 
 #ifdef __REAL_IMAGE_TEST__
 			nReadCnt = findFileName("/home/nanosystem/disk/img/", tofcamImage.localFileName, nReadCnt);
@@ -2074,48 +2106,33 @@ bool NSL3130AA::Capture( void** output, int timeout )
 				imageDist = image;
 			}
 #endif
+			tmChk.setEnd();
+			tmChk.printTime("RxConvert");
+
+			tmChk.setBegin();
 			static cv::Mat resizeDist, resizeFrame;
 
-#ifdef HAVE_CV_CUDA
-			cuda::GpuMat gpuImage, gpuOutImage, gpuImageDist, gpuOutImageDist;
-
-			gpuImage.upload(image);
-			gpuImageDist.upload(imageDist);
-
-//			Scalar avg = mean(image);
-//			tofcamInfo.meanAvg = avg[0];
-
-			if( tofcamInfo.rotate_90 != 0 ){
-				cuda::rotate(gpuImage, gpuImage, Size( DefaultHeight, DefaultWidth ), -90, DefaultHeight-1, 0, cv::INTER_LINEAR);
-				cuda::rotate(gpuImageDist, gpuImageDist, Size( DefaultHeight, DefaultWidth ), -90, DefaultHeight-1, 0, cv::INTER_LINEAR);
-
-				cuda::resize(gpuImage, gpuOutImage, cv::Size( tofcamInfo.height, tofcamInfo.width ),  cv::INTER_LANCZOS4);
-				cuda::resize(gpuImageDist, gpuOutImageDist, cv::Size( tofcamInfo.height, tofcamInfo.width ),  cv::INTER_LANCZOS4);
-			}
-			else{	// detectnet, poseNet, imagenet
-				cuda::resize(gpuImage, gpuOutImage, cv::Size( tofcamInfo.width, tofcamInfo.height ),  cv::INTER_LANCZOS4);
-				cuda::resize(gpuImageDist, gpuOutImageDist, cv::Size( tofcamInfo.width, tofcamInfo.height ),  cv::INTER_LANCZOS4);
-			}
-
-			// up-sampling : INTER_CUBIC, INTER_LANCZOS4
-			// down-sampling : INTER_AREA
-
-			gpuOutImage.download(resizeFrame);
-			gpuOutImageDist.download(resizeDist);
-#else
 			if( tofcamInfo.rotate_90 != 0 )
 			{
 				cv::rotate(image, image, ROTATE_90_CLOCKWISE);
 				cv::rotate(imageDist, imageDist, ROTATE_90_CLOCKWISE);
 
-				cv::resize( image, resizeFrame, cv::Size( tofcamInfo.height, tofcamInfo.width ) );
-				cv::resize( imageDist, resizeDist, cv::Size( tofcamInfo.height, tofcamInfo.width ));
+				cv::resize( image, resizeFrame, cv::Size( tofcamInfo.height, tofcamInfo.width ) , cv::INTER_LANCZOS4);
+				cv::resize( imageDist, resizeDist, cv::Size( tofcamInfo.height, tofcamInfo.width ), cv::INTER_LANCZOS4);
 			}
 			else{
-				cv::resize( image, resizeFrame, cv::Size( tofcamInfo.width, tofcamInfo.height ) );
-				cv::resize( imageDist, resizeDist, cv::Size( tofcamInfo.width, tofcamInfo.height ));
+				cv::resize( image, resizeFrame, cv::Size( tofcamInfo.width, tofcamInfo.height ) , cv::INTER_LANCZOS4);
+				cv::resize( imageDist, resizeDist, cv::Size( tofcamInfo.width, tofcamInfo.height ), cv::INTER_LANCZOS4);
+
+				if( tofcamInfo.width == 512 && tofcamInfo.height == 384 ){
+					cv::Mat empty_image(128, 512, CV_8UC3, Scalar(128,128,128));
+					cv::vconcat(empty_image, resizeFrame, resizeFrame);
+					cv::vconcat(empty_image, resizeDist, resizeDist);
+				}
 			}
-#endif
+
+			tmChk.setEnd();
+			tmChk.printTime("reSize");
 
 			tofcamImage.frameMat = &resizeFrame;
 			tofcamImage.distMat = &resizeDist;		
@@ -2125,7 +2142,7 @@ bool NSL3130AA::Capture( void** output, int timeout )
 
 		}
 		else{
-			Sleep(10);
+			Sleep(1);
 			
 			std::chrono::steady_clock::time_point curTime = std::chrono::steady_clock::now();
 			double passed_time = (curTime - begin).count() / 1000000.0;
@@ -2196,6 +2213,7 @@ void NSL3130AA::startCaptureCommand(int netType, void *pCapOption )
 	tofcamInfo.config.interferenceUseLashValueEnable = pCapOpt->interferenceUseLashValueEnable;
 	tofcamInfo.config.interferenceLimit = pCapOpt->interferenceLimit;
 	
+#ifndef __REAL_IMAGE_TEST__
 	reqIntegrationTime(tofcamInfo.control_sock);
 	reqMinAmplitude(tofcamInfo.control_sock);
 	reqFilterParameter(tofcamInfo.control_sock);
@@ -2205,8 +2223,7 @@ void NSL3130AA::startCaptureCommand(int netType, void *pCapOption )
 	reqDeepLearning(tofcamInfo.control_sock);
 
 	if( tofcamInfo.tofcamModeType == DISTANCE_GRAYSCALE_MODE ){
-		tofcamInfo.led_control = 1;		
-		reqGrayscaleLedControl(tofcamInfo.control_sock);
+		reqGrayscaleLedControl(tofcamInfo.control_sock, 1);
 	}
 
 	
@@ -2214,6 +2231,7 @@ void NSL3130AA::startCaptureCommand(int netType, void *pCapOption )
 	if( ttySerial == false ) reqStreamingFrame(tofcamInfo.control_sock);
 #endif	
 	tofcamInfo.captureNetType = netType;
+#endif
 
 	printf("start Capture~~~ intTime = %d/%d captureType =%d\n", pCapOpt->integrationTime, pCapOpt->grayIntegrationTime, pCapOpt->captureType);
 	
@@ -2291,6 +2309,7 @@ NSL3130AA::NSL3130AA( std::string ipaddr )
 	}
 #endif
 
+#ifndef __REAL_IMAGE_TEST__
 	if( tofcamInfo.control_sock == 0 ) {
 		if( ttySerial ){
 			ttySerial = false;
@@ -2322,7 +2341,7 @@ NSL3130AA::NSL3130AA( std::string ipaddr )
 #else
 	pthread_create(&threadID, NULL, NSL3130AA::rxWrapper, this);
 #endif
-
+#endif
 }
 
 

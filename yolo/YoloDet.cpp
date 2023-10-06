@@ -22,9 +22,17 @@
 #include "YoloDet.h"
 #include "ImageTools.h"
 #include "NSLFrame.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-void YoloDet::init(const std::string &modelPath, const std::string &modelCfg, float threshold, int modeltype ) {
+const int NUM_CLASSES = 1;
 
+void YoloDet::init(const std::string &modelPath, const std::string &modelCfg, float threshold, int modeltype ) 
+{
 	modelType = modeltype;
 
 	if( modelType == YOLO_V8_DETECTION_TYPE ){
@@ -52,27 +60,8 @@ void YoloDet::init(const std::string &modelPath, const std::string &modelCfg, fl
 	}
 }
 
-std::vector<cv::String> YoloDet::getOutputsNames(const cv::dnn::Net& net)
+int YoloDet::detect(cv::Mat &mat) 
 {
-    std::vector<cv::String> names;
-    if (names.empty())
-    {
-        //Get the indices of the output layers, i.e. the layers with unconnected outputs
-        std::vector<int> outLayers = net.getUnconnectedOutLayers();
-        
-        //get the names of all the layers in the network
-        std::vector<cv::String> layersNames = net.getLayerNames();
-        
-        // Get the names of the output layers in names
-        names.resize(outLayers.size());
-        for (int i = 0; i < outLayers.size(); ++i)
-            names[i] = layersNames[outLayers[i] - 1];
-    }
-    return names;
-}
-
-
-int YoloDet::detect(cv::Mat &mat) {
     static cv::Mat blob;
     static std::vector<cv::Mat> outputs;
 	std::vector<Detection> detections{};
@@ -138,59 +127,73 @@ int YoloDet::detect(cv::Mat &mat) {
 		ImageTools::draw(detections, mat, cv::Scalar(0, 255, 0));
 	}
 	else{ // YOLO_V4_DETECTION_TYPE
-		cv::dnn::blobFromImage(mat, blob, 1.0 / 255.0, model512Shape, cv::Scalar(), true, false);
-		net.setInput(blob);
-		net.forward(outputs, getOutputsNames(net));
-		
+#if 0
+		cv::dnn::DetectionModel model = cv::dnn::DetectionModel(net);
+		model.setInputParams(1 / 255.0, model512Shape, cv::Scalar(), true);
+
 		std::vector<int> classIds;
-		std::vector<float> confidences;
+		std::vector<float> scores;
 		std::vector<cv::Rect> boxes;
-		
-		for (int i = 0; i < outputs.size(); ++i)
-		{
-			// Scan through all the bounding boxes output from the network and keep only the
-			// ones with high confidence scores. Assign the box's class label as the class
-			// with the highest score for the box.
-			float* data = (float*)outputs[i].data;
-			for (int j = 0; j < outputs[i].rows; ++j, data += outputs[i].cols)
-			{
-				cv::Mat scores = outputs[i].row(j).colRange(5, outputs[i].cols);
-				cv::Point classIdPoint;
-				double confidence;
-				// Get the value and location of the maximum score
-				minMaxLoc(scores, 0, &confidence, 0, &classIdPoint);
-				
-				if (confidence > modelScoreThreshold && classIdPoint.x == 0)	//seobi only person :: classIdPoint.x == 0
-				{
-					int centerX = (int)(data[0] * mat.cols);
-					int centerY = (int)(data[1] * mat.rows);
-					int width = (int)(data[2] * mat.cols);
-					int height = (int)(data[3] * mat.rows);
-					int left = centerX - width / 2;
-					int top = centerY - height / 2;
-					
-					classIds.push_back(classIdPoint.x);
-					confidences.push_back((float)confidence);
-					boxes.push_back(cv::Rect(left, top, width, height));
-				}
-			}
-		}
-		
-		std::vector<int> indices;
-		cv::dnn::NMSBoxes(boxes, confidences, modelScoreThreshold, modelNMSThreshold, indices);
-		
-		for (int idx = 0; idx < indices.size(); ++idx)
+		model.detect(mat, classIds, scores, boxes, modelScoreThreshold, modelNMSThreshold);
+
+		for (int idx = 0; idx < classIds.size() && classIds[idx] == 0 ; ++idx)
 		{
 			Detection result;
 			result.class_id = classIds[idx];
-			result.confidence = confidences[idx];
+			result.confidence = scores[idx];
 			result.box = boxes[idx];
 					
 			detections.push_back(result);
 		}
-		
+#else	
+		cv::dnn::blobFromImage(mat, blob, 1.0 / 255.0, model512Shape, cv::Scalar(), true, false, CV_32F);
+		net.setInput(blob);
+		net.forward(outputs, net.getUnconnectedOutLayersNames());
 
+        std::vector<int> indices[NUM_CLASSES];
+        std::vector<cv::Rect> boxes[NUM_CLASSES];
+        std::vector<float> scores[NUM_CLASSES];
+
+        for (auto& output : outputs)
+        {
+            const auto num_boxes = output.rows;
+            for (int i = 0; i < num_boxes; i++)
+            {
+                auto x = output.at<float>(i, 0) * mat.cols;
+                auto y = output.at<float>(i, 1) * mat.rows;
+                auto width = output.at<float>(i, 2) * mat.cols;
+                auto height = output.at<float>(i, 3) * mat.rows;
+                cv::Rect rect(x - width/2, y - height/2, width, height);
+
+                for (int c = 0; c < NUM_CLASSES; c++)
+                {
+                    auto confidence = *output.ptr<float>(i, 5 + c);
+                    if (confidence >= modelScoreThreshold)
+                    {
+                        boxes[c].push_back(rect);
+                        scores[c].push_back(confidence);
+                    }
+                }
+            }
+        }
+		
+        for (int c = 0; c < NUM_CLASSES; c++)
+        {
+            cv::dnn::NMSBoxes(boxes[c], scores[c], 0.0, modelNMSThreshold, indices[c]);
+
+			for (int idx = 0; idx < indices[c].size(); ++idx)
+			{
+				Detection result;
+				result.class_id = c;
+				result.confidence = scores[c][idx];
+				result.box = boxes[c][idx];
+						
+				detections.push_back(result);
+			}
+        }
+#endif
 		ImageTools::draw(detections, mat, cv::Scalar(128, 0, 255));
+		
 	}
 
 

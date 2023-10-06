@@ -147,7 +147,7 @@ videoSource *videoSource::initAppCfg(int argc, char **argv, CaptureOptions *pApp
 
 	pAppCfg->captureType = find_int_arg(argc, argv, (char *)"-captureType", 1);//0 ~ 2
 	pAppCfg->integrationTime = find_int_arg(argc, argv, (char *)"-intTime", 1500);//800;
-	pAppCfg->grayIntegrationTime = find_int_arg(argc, argv, (char *)"-grayintTime", 100);//100;
+	pAppCfg->grayIntegrationTime = find_int_arg(argc, argv, (char *)"-grayintTime", 1500);//100;
 	pAppCfg->maxDistance = find_int_arg(argc, argv, (char *)"-maxDistance", 12500);
 	pAppCfg->minAmplitude = find_int_arg(argc, argv, (char *)"-amplitudeMin", 50);
 
@@ -319,6 +319,7 @@ void videoSource::initDeepLearning( CaptureOptions *pAppCfg )
 			cv::Mat initImage(V4_MODEL_WIDTH, V4_MODEL_HEIGHT, CV_8UC3, cv::Scalar(255,255,255)); 
 			yoloDet->init("../data/yolov4-csp.weights", "../data/yolov4-csp.cfg", pAppCfg->detectThreshold, pAppCfg->modelType); // 8fps
 			setCameraSize(V4_MODEL_WIDTH, V4_MODEL_HEIGHT);
+			//setCameraSize(512, 384);
 			yoloDet->detect(initImage);
 		}
 	}
@@ -366,8 +367,8 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions *
 	// distance + gray image concat
 #ifdef HAVE_CV_CUDA
 	cv::cuda::GpuMat gpuGray(grayMat), gpuGrayImage, gpuDist(distMat), gpuDistImage;
-	cv::cuda::resize(gpuGray, gpuGrayImage, cv::Size( display_width, display_height ),  cv::INTER_LANCZOS4);
-	cv::cuda::resize(gpuDist, gpuDistImage, cv::Size( display_width, display_height ),  cv::INTER_LANCZOS4);
+	cv::cuda::resize(gpuGray, gpuGrayImage, cv::Size( display_width, display_height ),  cv::INTER_LINEAR);
+	cv::cuda::resize(gpuDist, gpuDistImage, cv::Size( display_width, display_height ),  cv::INTER_LINEAR);
 
 	cv::cuda::GpuMat gpuHconcat (gpuGrayImage.rows, gpuGrayImage.cols * 2, gpuGrayImage.type());
 	gpuGrayImage.copyTo(gpuHconcat(cv::Rect(0,0,gpuGrayImage.cols, gpuGrayImage.rows)));
@@ -491,20 +492,22 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions *
 		dist_caption = nonDistStringCap;
 	}
 
-	std::string defaultInfoCap2;
-	std::string defaultInfoCap3;
+	std::string defaultInfoCap2 = cv::format("position       :     %s", dist_caption.c_str());
+	std::string defaultInfoCap3 = cv::format("frame rate    :     %d fps", appCfg->displayFps);
 	std::string defaultInfoCap1 = cv::format("<%s>                           <Distance>", getLeftViewName().c_str());
-
+	if( isRotate90() ){
+		defaultInfoCap1 = cv::format("<%s>               <Distance>", getLeftViewName().c_str());
+		putText(viewInfo, defaultInfoCap1.c_str(), cv::Point(160, 35), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(255, 255, 255));
+	}
+	else{
+		putText(viewInfo, defaultInfoCap1.c_str(), cv::Point(245, 35), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(255, 255, 255));
+	}
 	
-	defaultInfoCap2 = cv::format("position       :     %s", dist_caption.c_str());
-	defaultInfoCap3 = cv::format("frame rate    :     %d fps", appCfg->displayFps);
+	putText(viewInfo, defaultInfoCap2.c_str(), cv::Point(90, 90), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(255, 255, 255));
+	putText(viewInfo, defaultInfoCap3.c_str(), cv::Point(90, 125), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(255, 255, 255));
 
 	putText(viewInfoUpper, defaultInfoTitle.c_str(), cv::Point(340, 35), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(255, 255, 255));
 	putText(viewInfoLower, defaultInfoLower.c_str(), cv::Point(780, 26), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 0, 0));
-
-	putText(viewInfo, defaultInfoCap1.c_str(), cv::Point(245, 35), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(255, 255, 255));
-	putText(viewInfo, defaultInfoCap2.c_str(), cv::Point(90, 90), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(255, 255, 255));
-	putText(viewInfo, defaultInfoCap3.c_str(), cv::Point(90, 125), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(255, 255, 255));
 	
 #ifdef HAVE_CV_CUDA
 	cv::cuda::GpuMat gpuUpper(viewInfoUpper), gpuView(viewInfo), gpuLower(viewInfoLower), gpuImage(drawMat), gpuVconcat(drawMat.rows+viewInfoUpper.rows+viewInfoLower.rows+viewInfo.rows, drawMat.cols, drawMat.type());
@@ -532,7 +535,7 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions *
 	if( fps_time >= 1000.0f ){
 		appCfg->displayFps = appCfg->fpsCount;
 
-		printf("sample %d fps time = %.3f/%.3f w=%d h=%d\n", appCfg->displayFps, frame_time, fps_time, getWidth(), getHeight());
+		printf("sample %d fps time = %.3f/%.3f w=%d h=%d\n", appCfg->displayFps, frame_time, fps_time, getDLWidth(), getDLHeight());
 		appCfg->fpsCount = 0;
 		fpsTime = curTime;
 	}
