@@ -25,19 +25,21 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
+#include "NSLFrame.h"
 
+#ifdef DEEP_LEARNING
 
 class YoloPose {
 private:
     cv::dnn::Net net;
 #if 1	//seobi
-	const cv::Size modelShape = cv::Size(640, 640);
+	const cv::Size modelShape = cv::Size(640, 480);
 	float modelScoreThreshold{0.60};
 	float modelNMSThreshold{0.50};
 #else
     const cv::Size modelShape = cv::Size(640, 640);
-    const float modelScoreThreshold{0.70};
-    const float modelNMSThreshold{0.50};
+    float modelScoreThreshold{0.6};
+    float modelNMSThreshold{0.50};
 #endif
 	int modelType;
 public:
@@ -62,5 +64,7 @@ public:
 };
 
 inline static float clamp(float val, float min, float max);
+
+#endif
 
 #endif //YOLOV8_YOLOPOSE_H

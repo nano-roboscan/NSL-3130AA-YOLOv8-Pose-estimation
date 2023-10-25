@@ -58,9 +58,11 @@ videoSource::videoSource()
 	printf("new videoSource()\n");
 
 	fpsTime = std::chrono::steady_clock::now();
+
+#ifdef DEEP_LEARNING
 	yoloPose = NULL;
 	yoloDet = NULL;
-	
+#endif	
 	localFileTest = 0;
 	localFileTotalCnt = 0;
 	captureTotalCnt = 0;	
@@ -71,8 +73,10 @@ videoSource::videoSource()
 
 videoSource::~videoSource()
 {
+#ifdef DEEP_LEARNING
 	if( yoloPose != NULL ) delete yoloPose;
 	if( yoloDet != NULL ) delete yoloDet;
+#endif
 	printf("~videoSource()\n");
 }
 
@@ -101,6 +105,7 @@ void print_help()
 	printf("-deepLearning : 0:off, 1:on(amplitude : overflow off)\n");
 }
 
+
 /*
 # -nslType : 0 : NSL-1110AA, 1 : NSL-3130AA
 # -captureType : 0 ~ 2
@@ -122,12 +127,12 @@ void print_help()
 # -interferenceEnable :  0=disable, 1=enable
 # -interferenceLimit :  0=disable, 1~1000
 */
-videoSource *videoSource::initAppCfg(int argc, char **argv, CaptureOptions *pAppCfg)
+videoSource *videoSource::initAppCfg(int argc, char **argv, CaptureOptions &camOpt)
 {
-	memset(pAppCfg, 0, sizeof(CaptureOptions));
+	memset(&camOpt, 0, sizeof(CaptureOptions));
 	
-	pAppCfg->minConfidence= 100.0;
-	pAppCfg->maxConfidence = 0;
+	camOpt.minConfidence = 100.0;
+	camOpt.maxConfidence = 0;
 
 	// HELP ...
 	for(int i = 0; i < argc; ++i){
@@ -141,50 +146,50 @@ videoSource *videoSource::initAppCfg(int argc, char **argv, CaptureOptions *pApp
 	
 	char *ipAddr = find_char_arg(argc, argv, (char *)"ipaddr", (char *)"192.168.0.220");	
 
-	pAppCfg->lidarType = find_int_arg(argc, argv, (char *)"-nslType", NSL3130_TYPE); // 0 : NSL1110AA, 1 : NSL3130AA
-	pAppCfg->inputSize = find_int_arg(argc, argv, (char *)"-inputSize", 0); // 0 : 320, 1 : 416
-	pAppCfg->detectThreshold = find_float_arg(argc, argv, (char *)"-thresHold", 0);	// 0: defined YoloPose.h, N: user defined
+	camOpt.lidarType = find_int_arg(argc, argv, (char *)"-nslType", NSL3130_TYPE); // 0 : NSL1110AA, 1 : NSL3130AA
+	camOpt.inputSize = find_int_arg(argc, argv, (char *)"-inputSize", 0); // 0 : 320, 1 : 416
+	camOpt.detectThreshold = find_float_arg(argc, argv, (char *)"-thresHold", 0);	// 0: defined YoloPose.h, N: user defined
 
-	pAppCfg->captureType = find_int_arg(argc, argv, (char *)"-captureType", 1);//0 ~ 2
-	pAppCfg->integrationTime = find_int_arg(argc, argv, (char *)"-intTime", 1500);//800;
-	pAppCfg->grayIntegrationTime = find_int_arg(argc, argv, (char *)"-grayintTime", 1500);//100;
-	pAppCfg->maxDistance = find_int_arg(argc, argv, (char *)"-maxDistance", 12500);
-	pAppCfg->minAmplitude = find_int_arg(argc, argv, (char *)"-amplitudeMin", 50);
+	camOpt.captureType = find_int_arg(argc, argv, (char *)"-captureType", 1);//0 ~ 2
+	camOpt.integrationTime = find_int_arg(argc, argv, (char *)"-intTime", 1500);//800;
+	camOpt.grayIntegrationTime = find_int_arg(argc, argv, (char *)"-grayintTime", 1500);//100;
+	camOpt.maxDistance = find_int_arg(argc, argv, (char *)"-maxDistance", 12500);
+	camOpt.minAmplitude = find_int_arg(argc, argv, (char *)"-amplitudeMin", 50);
 
-	pAppCfg->edgeThresHold = find_int_arg(argc, argv, (char *)"-edgeThresHold", 0);
-	pAppCfg->medianFilterSize = find_int_arg(argc, argv, (char *)"-medianFilterSize", 0);
-	pAppCfg->medianFilterIterations = find_int_arg(argc, argv, (char *)"-medianIter", 0);
-	pAppCfg->gaussIteration = find_int_arg(argc, argv, (char *)"-gaussIter", 0);
+	camOpt.edgeThresHold = find_int_arg(argc, argv, (char *)"-edgeThresHold", 0);
+	camOpt.medianFilterSize = find_int_arg(argc, argv, (char *)"-medianFilterSize", 0);
+	camOpt.medianFilterIterations = find_int_arg(argc, argv, (char *)"-medianIter", 0);
+	camOpt.gaussIteration = find_int_arg(argc, argv, (char *)"-gaussIter", 0);
 
-	pAppCfg->medianFilterEnable = find_int_arg(argc, argv, (char *)"-medianFilterEnable", 0);
-	pAppCfg->averageFilterEnable = find_int_arg(argc, argv, (char *)"-averageFilterEnable", 0);
-	pAppCfg->temporalFilterFactorActual = find_int_arg(argc, argv, (char *)"-temporalFactor", 0);
-	pAppCfg->temporalFilterThreshold = find_int_arg(argc, argv, (char *)"-temporalThresHold", 0);
-	pAppCfg->interferenceUseLashValueEnable = find_int_arg(argc, argv, (char *)"-interferenceEnable", 0);
-	pAppCfg->interferenceLimit = find_int_arg(argc, argv, (char *)"-interferenceLimit", 0);
+	camOpt.medianFilterEnable = find_int_arg(argc, argv, (char *)"-medianFilterEnable", 0);
+	camOpt.averageFilterEnable = find_int_arg(argc, argv, (char *)"-averageFilterEnable", 0);
+	camOpt.temporalFilterFactorActual = find_int_arg(argc, argv, (char *)"-temporalFactor", 0);
+	camOpt.temporalFilterThreshold = find_int_arg(argc, argv, (char *)"-temporalThresHold", 0);
+	camOpt.interferenceUseLashValueEnable = find_int_arg(argc, argv, (char *)"-interferenceEnable", 0);
+	camOpt.interferenceLimit = find_int_arg(argc, argv, (char *)"-interferenceLimit", 0);
 
 
-	pAppCfg->dualbeamState = find_int_arg(argc, argv, (char *)"-dualBeam", 0);	// 0:off, 1:6Mhz, 2:3Mhz
-	pAppCfg->hdr_mode = find_int_arg(argc, argv, (char *)"-hdrMode", 0);		// 0:off, 1:spatial, 2:temporal
-	pAppCfg->deeplearning = find_int_arg(argc, argv, (char *)"-deepLearning", 0);	// 0:off, 1:on(amplitude : overflow off)
-	pAppCfg->modelType = find_int_arg(argc, argv, (char *)"-modelType", 0);		// 0:Yolo8-pose, 1:Yolo8-pose-detection, 2:Yolov8-detection, 3:Yolov4-csp
+	camOpt.dualbeamState = find_int_arg(argc, argv, (char *)"-dualBeam", 0);	// 0:off, 1:6Mhz, 2:3Mhz
+	camOpt.hdr_mode = find_int_arg(argc, argv, (char *)"-hdrMode", 0);		// 0:off, 1:spatial, 2:temporal
+	camOpt.deeplearning = find_int_arg(argc, argv, (char *)"-deepLearning", 0);	// 0:off, 1:on(amplitude : overflow off)
+	camOpt.modelType = find_int_arg(argc, argv, (char *)"-modelType", 0);		// 0:Yolo8-pose, 1:Yolo8-pose-detection, 2:Yolov8-detection, 3:Yolov4-csp
 
-	if( pAppCfg->inputSize == 0 ) pAppCfg->inputSize = 320;
-	else if( pAppCfg->inputSize == 1 ) pAppCfg->inputSize = 416;
+	if( camOpt.inputSize == 0 ) camOpt.inputSize = 320;
+	else if( camOpt.inputSize == 1 ) camOpt.inputSize = 416;
 
-	if( pAppCfg->detectThreshold > 1 ) pAppCfg->detectThreshold /= 100.0f;
+	if( camOpt.detectThreshold > 1 ) camOpt.detectThreshold /= 100.0f;
 
-	if( pAppCfg->captureType < 0 || pAppCfg->captureType > 2 ) pAppCfg->captureType = 1;
-	if( pAppCfg->maxDistance == 0 ) pAppCfg->maxDistance = 12500;
-	if( pAppCfg->integrationTime == 0 ) pAppCfg->integrationTime = 800;
-	if( pAppCfg->grayIntegrationTime == 0 ) pAppCfg->grayIntegrationTime = 100;
-	if( pAppCfg->minAmplitude == 0 ) pAppCfg->minAmplitude = 50;
-	if( pAppCfg->medianFilterSize < 0 || pAppCfg->medianFilterSize > 99 ) pAppCfg->medianFilterSize = 0;
-	if( pAppCfg->medianFilterIterations < 0 || pAppCfg->medianFilterIterations > 10000 ) pAppCfg->medianFilterIterations = 0;
-	if( pAppCfg->gaussIteration < 0 || pAppCfg->gaussIteration > 10000 ) pAppCfg->gaussIteration = 0;
-	if( pAppCfg->edgeThresHold < 0 || pAppCfg->edgeThresHold > 10000 ) pAppCfg->edgeThresHold = 0;
+	if( camOpt.captureType < 0 || camOpt.captureType > 2 ) camOpt.captureType = 1;
+	if( camOpt.maxDistance == 0 ) camOpt.maxDistance = 12500;
+	if( camOpt.integrationTime == 0 ) camOpt.integrationTime = 800;
+	if( camOpt.grayIntegrationTime == 0 ) camOpt.grayIntegrationTime = 100;
+	if( camOpt.minAmplitude == 0 ) camOpt.minAmplitude = 50;
+	if( camOpt.medianFilterSize < 0 || camOpt.medianFilterSize > 99 ) camOpt.medianFilterSize = 0;
+	if( camOpt.medianFilterIterations < 0 || camOpt.medianFilterIterations > 10000 ) camOpt.medianFilterIterations = 0;
+	if( camOpt.gaussIteration < 0 || camOpt.gaussIteration > 10000 ) camOpt.gaussIteration = 0;
+	if( camOpt.edgeThresHold < 0 || camOpt.edgeThresHold > 10000 ) camOpt.edgeThresHold = 0;
 	
-	return videoSource::Create(pAppCfg->lidarType, ipAddr);
+	return videoSource::Create(camOpt.lidarType, ipAddr);
 }
 
 videoSource* videoSource::Create( int type, char *ipaddr )
@@ -298,39 +303,41 @@ void videoSource::getMouseEvent( int *mouse_xpos, int *mouse_ypos )
 
 
 /////////////////////////////////////// public function ///////////////////////////////////////////////////////////
-void videoSource::initDeepLearning( CaptureOptions *pAppCfg )
+void videoSource::initDeepLearning( CaptureOptions &camOpt )
 {
-
-	if( pAppCfg->modelType == YOLO_V8_POSE_TYPE || pAppCfg->modelType == YOLO_V8_POSE_DETECTION_TYPE ){
+#ifdef DEEP_LEARNING
+	if( camOpt.modelType == YOLO_V8_POSE_TYPE || camOpt.modelType == YOLO_V8_POSE_DETECTION_TYPE ){
 		cv::Mat initImage(MODEL_WIDTH, MODEL_HEIGHT, CV_8UC3, cv::Scalar(255,255,255)); 
 		yoloPose = new YoloPose();
-		yoloPose->init("../data/yolov8n-pose.onnx", pAppCfg->detectThreshold, pAppCfg->modelType);
+		yoloPose->init("../data/yolov8n-pose.onnx", camOpt.detectThreshold, camOpt.modelType);
 		yoloPose->detect(initImage);
 	}
 	else{
 		yoloDet = new YoloDet();
 
-		if(pAppCfg->modelType == YOLO_V8_DETECTION_TYPE){
+		if(camOpt.modelType == YOLO_V8_DETECTION_TYPE){
 			cv::Mat initImage(MODEL_WIDTH, MODEL_HEIGHT, CV_8UC3, cv::Scalar(255,255,255)); 
-			yoloDet->init("../data/yolov8n.onnx", "", pAppCfg->detectThreshold, pAppCfg->modelType);
+			yoloDet->init("../data/yolov8n.onnx", "", camOpt.detectThreshold, camOpt.modelType);
 			yoloDet->detect(initImage);
 		}
-		else{ // pAppCfg->modelType == YOLO_V4_DETECTION_TYPE
+		else{ // camOpt.modelType == YOLO_V4_DETECTION_TYPE
 			cv::Mat initImage(V4_MODEL_WIDTH, V4_MODEL_HEIGHT, CV_8UC3, cv::Scalar(255,255,255)); 
-			yoloDet->init("../data/yolov4-csp.weights", "../data/yolov4-csp.cfg", pAppCfg->detectThreshold, pAppCfg->modelType); // 8fps
+			yoloDet->init("../data/yolov4-csp.weights", "../data/yolov4-csp.cfg", camOpt.detectThreshold, camOpt.modelType); // 8fps
 			setCameraSize(V4_MODEL_WIDTH, V4_MODEL_HEIGHT);
 			//setCameraSize(512, 384);
 			yoloDet->detect(initImage);
 		}
 	}
+#endif	
 }
 
 
-int videoSource::deepLearning( cv::Mat &imageLidar, CaptureOptions *pAppCfg )
+int videoSource::deepLearning( cv::Mat &imageLidar, CaptureOptions &camOpt )
 {
 	int retSize = 0;
 	
-	if( pAppCfg->modelType == YOLO_V8_POSE_TYPE || pAppCfg->modelType == YOLO_V8_POSE_DETECTION_TYPE ){
+#ifdef DEEP_LEARNING
+	if( camOpt.modelType == YOLO_V8_POSE_TYPE || camOpt.modelType == YOLO_V8_POSE_DETECTION_TYPE ){
 		retSize = yoloPose->detect(imageLidar);
 	}
 	else {
@@ -350,19 +357,19 @@ int videoSource::deepLearning( cv::Mat &imageLidar, CaptureOptions *pAppCfg )
 			detectTotalCnt++;
 		}
 	}
-
+#endif
 	return retSize;
 }
 
 
-void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions *appCfg)
+void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions &camOpt)
 {
 	int mouse_xpos, mouse_ypos;
 	getMouseEvent(&mouse_xpos, &mouse_ypos);
 
 	cv::Mat drawMat;
-	int display_width = appCfg->isRotate ? DISPLAY_HEIGHT : DISPLAY_WIDTH;
-	int display_height = appCfg->isRotate ? DISPLAY_WIDTH : DISPLAY_HEIGHT;
+	int display_width = camOpt.isRotate ? DISPLAY_HEIGHT : DISPLAY_WIDTH;
+	int display_height = camOpt.isRotate ? DISPLAY_WIDTH : DISPLAY_HEIGHT;
 
 	// distance + gray image concat
 #ifdef HAVE_CV_CUDA
@@ -384,8 +391,8 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions *
 #endif
 
 	// draw people count
-	std::string cntCaption = cv::format("%d", appCfg->detectingCnt);
-	if( appCfg->detectingCnt > 9 )
+	std::string cntCaption = cv::format("%d", camOpt.detectingCnt);
+	if( camOpt.detectingCnt > 9 )
 		putText(drawMat, cntCaption.c_str(), cv::Point(display_width-50, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 0));
 	else
 		putText(drawMat, cntCaption.c_str(), cv::Point(display_width-30, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 0));
@@ -402,7 +409,7 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions *
 	int width_div = getWidthDiv();
 	int height_div = getHeightDiv();
 
-	if( appCfg->lidarType == NSL3130_TYPE ){
+	if( camOpt.lidarType == NSL3130_TYPE ){
 		defaultInfoTitle = cv::format("NANOSYSTEMS NSL-3130AA Viewer");
 	}
 	else{
@@ -483,7 +490,7 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions *
 		if( isRotate90() == false ) dist_pos = tofcam_YPos*getVideoWidth() + tofcam_XPos;
 		else dist_pos = tofcam_YPos*getVideoHeight() + tofcam_XPos;
 
-		dist_caption = cv::format("X:%d, Y:%d, %s", tofcam_XPos, tofcam_YPos, getDistanceString(appCfg->pDistanceTable[dist_pos]).c_str());
+		dist_caption = cv::format("X:%d, Y:%d, %s", tofcam_XPos, tofcam_YPos, getDistanceString(camOpt.pDistanceTable[dist_pos]).c_str());
 	}
 	else if( distStringCap.length() > 0 ){
 		dist_caption = distStringCap;
@@ -493,7 +500,7 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions *
 	}
 
 	std::string defaultInfoCap2 = cv::format("position       :     %s", dist_caption.c_str());
-	std::string defaultInfoCap3 = cv::format("frame rate    :     %d fps", appCfg->displayFps);
+	std::string defaultInfoCap3 = cv::format("frame rate    :     %d fps", camOpt.displayFps);
 	std::string defaultInfoCap1 = cv::format("<%s>                           <Distance>", getLeftViewName().c_str());
 	if( isRotate90() ){
 		defaultInfoCap1 = cv::format("<%s>               <Distance>", getLeftViewName().c_str());
@@ -525,18 +532,17 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions *
     cv::imshow(WIN_NAME, drawMat);
 //	drawPointCloud();
 
-
 	std::chrono::steady_clock::time_point curTime = std::chrono::steady_clock::now();
 	double frame_time = (curTime - frameTime).count() / 1000000.0;
 	double fps_time = (curTime - fpsTime).count() / 1000000.0;
 
-	appCfg->fpsCount++;
+	camOpt.fpsCount++;
 
 	if( fps_time >= 1000.0f ){
-		appCfg->displayFps = appCfg->fpsCount;
+		camOpt.displayFps = camOpt.fpsCount;
 
-		printf("sample %d fps time = %.3f/%.3f w=%d h=%d\n", appCfg->displayFps, frame_time, fps_time, getDLWidth(), getDLHeight());
-		appCfg->fpsCount = 0;
+		printf("sample %d fps time = %.3f/%.3f w=%d h=%d\n", camOpt.displayFps, frame_time, fps_time, getDLWidth(), getDLHeight());
+		camOpt.fpsCount = 0;
 		fpsTime = curTime;
 	}
 
@@ -552,17 +558,19 @@ void videoSource::stopLidar()
 }
 
 
-bool videoSource::captureLidar( int timeout, CaptureOptions *pAppCfg )
+bool videoSource::captureLidar( int timeout, CaptureOptions &camOpt )
 {
 	ImageFrame *camImage = NULL;	
+
 	frameTime = std::chrono::steady_clock::now();
+
 	bool ret = Capture((void **)&camImage, timeout);
 
 	if( ret ){
-		pAppCfg->isRotate = camImage->isRotate;
-		pAppCfg->frameMat = camImage->frameMat;
-		pAppCfg->distMat = camImage->distMat;
-		pAppCfg->pDistanceTable = camImage->pDistanceTable;
+		camOpt.isRotate = camImage->isRotate;
+		camOpt.frameMat = camImage->frameMat;
+		camOpt.distMat = camImage->distMat;
+		camOpt.pDistanceTable = camImage->pDistanceTable;
 
 		localFileTest = camImage->localFileTest;
 		if( localFileTest != 0 ){
@@ -582,7 +590,7 @@ bool videoSource::captureLidar( int timeout, CaptureOptions *pAppCfg )
 }
 
 
-void videoSource::setLidarOption(int netType, void *pCapOpt)
+void videoSource::setLidarOption(int netType, CaptureOptions &camOpt)
 {
 	beginTime = std::clock();
 
@@ -590,11 +598,11 @@ void videoSource::setLidarOption(int netType, void *pCapOpt)
 	cv::setWindowProperty(WIN_NAME, cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);	
 	cv::setMouseCallback(WIN_NAME, callback_mouse_click, this);
 
-	startCaptureCommand(netType, pCapOpt);
+	startCaptureCommand(netType, camOpt);
 }
 
 
-int videoSource::prockey(CaptureOptions *appCfg)
+int videoSource::prockey(CaptureOptions &camOpt)
 {
 	int key = cv::waitKey(1);
 

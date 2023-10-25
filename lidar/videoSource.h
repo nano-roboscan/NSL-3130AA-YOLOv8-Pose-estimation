@@ -23,8 +23,11 @@
 #ifndef __VIDEO_SOURCE_H__
 #define __VIDEO_SOURCE_H__
 
+#include "NSLFrame.h"
+
+
 #include <opencv2/opencv.hpp>
-#include <opencv2/dnn.hpp>
+//#include <opencv2/dnn.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/core/ocl.hpp>
 
@@ -32,8 +35,8 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include <chrono>
 
-#include "NSLFrame.h"
 #include "lens_transform.h"
 #include "YoloPose.h"
 #include "YoloDet.h"
@@ -61,16 +64,16 @@ private:
 	std::string nonDistStringCap;
 	std::string cntStringCap, timeStringCap;
 
-	std::chrono::steady_clock::time_point timeDelay;
 	std::chrono::steady_clock::time_point frameTime;
 	std::chrono::steady_clock::time_point fpsTime;
+
 	clock_t beginTime, endTime ;
 
 	std::atomic<int> x_start, y_start;
-	cv::dnn::Net dnnNet;
+#ifdef DEEP_LEARNING
 	YoloPose *yoloPose;
 	YoloDet  *yoloDet;
-
+#endif
 	int localFileTest;
 	int localFileTotalCnt;
 	int captureTotalCnt;
@@ -79,14 +82,14 @@ private:
 	char *localFileName;
 
 public:
-	static videoSource * initAppCfg(int argc, char **argv, CaptureOptions *pAppCfg);
-	void setLidarOption(int netType, void *pCapOpt);
-	bool captureLidar( int timeout, CaptureOptions *pAppCfg );
-	int prockey(CaptureOptions *appCfg);
+	static videoSource * initAppCfg(int argc, char **argv, CaptureOptions &camOpt);
+	void setLidarOption(int netType, CaptureOptions &camOpt);
+	bool captureLidar( int timeout, CaptureOptions &camOpt );
+	int prockey(CaptureOptions &camOpt);
 	void stopLidar();
-	void drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions *appCfg);
-	void initDeepLearning( CaptureOptions *pAppCfg );
-	int deepLearning( cv::Mat &imageLidar, CaptureOptions *pAppCfg );
+	void drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions &camOpt);
+	void initDeepLearning( CaptureOptions &camOpt );
+	int deepLearning( cv::Mat &imageLidar, CaptureOptions &camOpt );
 
 	///////////////////// virtual interface ////////////////////////////////////////////////////////////////
 	/**
@@ -95,7 +98,7 @@ public:
 	 */
 	virtual ~videoSource();
 	virtual bool Capture( void** image, int timeout=3000 ) = 0;
-	virtual void startCaptureCommand( int netType, void *pCapOpt) = 0;
+	virtual void startCaptureCommand( int netType, CaptureOptions &camOpt) = 0;
 	virtual void setKey(int cmdKey) = 0;
 	virtual std::string getDistanceString(int distance ) = 0;
 	virtual int getDLWidth() = 0;

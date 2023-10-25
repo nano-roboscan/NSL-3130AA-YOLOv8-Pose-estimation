@@ -302,7 +302,7 @@ public:
 
 	virtual void closeLidar();
 	virtual bool Capture( void** image, int timeout=3000 );
-	virtual void startCaptureCommand( int netType, void *pCapOpt) ;
+	virtual void startCaptureCommand( int netType, CaptureOptions &camOpt) ;
 	virtual void setKey(int cmdKey);
 	virtual std::string getDistanceString(int distance );
 	virtual int getDLWidth();

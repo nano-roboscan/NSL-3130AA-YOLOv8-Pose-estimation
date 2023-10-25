@@ -49,11 +49,11 @@
 #ifdef HAVE_CV_CUDA
 #include <opencv2/cudawarping.hpp>
 #endif
-#include "timecheck.h"
+#include "timeCheck.h"
 
 using namespace cv;
 
-//#define __REAL_IMAGE_TEST__
+//#define __LOCAL_IMAGE_TEST__
 
 //#define TOFCAM660_ROTATE_IMAGE_90
 //#define ROTATE_IMAGE_ADJUST_ROI
@@ -1802,14 +1802,14 @@ int NSL3130AA::rxSerial(uint8_t *socketbuff, int buffLen, bool addQue)
 			printf("error start marker [%02X:%02X:%02X:%02X]\n", socketbuff[0], socketbuff[1], socketbuff[2], socketbuff[3]);
 		}
 		else if( type == 1 ){
-			pthread_mutex_lock(&tofcamBuff.lock);
+			EnterCriticalSection(&tofcamBuff.lock);
 			
 			tofcamBuff.bufGrayLen[tofcamBuff.head_idx] = 0;
 			memcpy(tofcamBuff.tofcamBuf[tofcamBuff.head_idx], &socketbuff[9], buffLen-13);
 			tofcamBuff.bufLen[tofcamBuff.head_idx] = buffLen;
 			ADD_TOFCAM_BUFF(tofcamBuff, NSL3130_ETH_BUFF_SIZE);
 			
-			pthread_mutex_unlock(&tofcamBuff.lock);
+			LeaveCriticalSection(&tofcamBuff.lock);
 		}
 		else{
 			printf("err recv data type = %d totalLen = %d recv = %d\n", type, buffLen, tofcamInfo.receivedBytes);
@@ -1827,18 +1827,15 @@ int NSL3130AA::rxSerial(uint8_t *socketbuff, int buffLen, bool addQue)
 #endif
 
 
-#ifdef __REAL_IMAGE_TEST__
+#ifdef __LOCAL_IMAGE_TEST__
 #include <dirent.h>
 
 struct	dirent **namelist = NULL;
 static int dirCnt = 0;
 static int nReadCnt = 0;
 
-static int findFileName( const char* path, char *findName, int readCnt )
-{
-	int idx = 0;
-	bool bFind = false;
-	
+static int findFileName( const char* path, char *findName )
+{	
 	findName[0] = 0;
 	
 	if( namelist == NULL ){
@@ -1848,42 +1845,28 @@ static int findFileName( const char* path, char *findName, int readCnt )
 		}
 	}
 
-//	printf("readcnt = %d dircnt = %d\n", readCnt, dirCnt);
-
-	for(idx = readCnt; idx < dirCnt; idx++) {
-		if( strcmp(namelist[idx]->d_name,".") == 0 || strcmp(namelist[idx]->d_name,"..") == 0 ){
-			continue;
-		}
-
-		if( findName[0] == 0 ){
-		   sprintf(findName,"%s", namelist[idx]->d_name);
-		}
-
-		sprintf(findName,"%s", namelist[idx]->d_name);
-		bFind = true;
-		break;
-	}
-
-	
-//	printf("findName = %s\n", findName);
-	if( bFind == false )
+	if( nReadCnt == dirCnt )
 	{	
-#if 0	
 		// 건별 데이터 메모리 해제
-		for(idx = 0; idx < dirCnt; idx++) {
+		for(int idx = 0; idx < dirCnt; idx++) {
 		   free(namelist[idx]);
 		}
 		
 		// namelist에 대한 메모리 해제
 		free(namelist);
-
-		exit(0);
-#else		
 		return 0;
-#endif
 	}
 
-	return idx+1;
+
+//	printf("readcnt = %d dircnt = %d\n", readCnt, dirCnt);
+	while( strcmp(namelist[nReadCnt]->d_name,".") == 0 || strcmp(namelist[nReadCnt]->d_name,"..") == 0 ){
+		nReadCnt++;
+		continue;
+	}
+
+	sprintf(findName,"%s", namelist[nReadCnt]->d_name);
+	nReadCnt++;
+	return nReadCnt;
 
 }
 #endif
@@ -2044,12 +2027,12 @@ bool NSL3130AA::Capture( void** output, int timeout )
 	tmChk.setBegin();
 
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-	
+
 	int frame_cnt = 0;
 	while(!exit_thtread)
 	{
 		if( GET_BUFF_CNT(tofcamBuff, NSL3130_ETH_BUFF_SIZE) > 0
-#ifdef __REAL_IMAGE_TEST__
+#ifdef __LOCAL_IMAGE_TEST__
 			|| true
 #endif
 		){
@@ -2058,9 +2041,9 @@ bool NSL3130AA::Capture( void** output, int timeout )
 
 			tmChk.setBegin();
 
-#ifdef __REAL_IMAGE_TEST__
-			nReadCnt = findFileName("/home/nanosystem/disk/img/", tofcamImage.localFileName, nReadCnt);
-			if( nReadCnt == 0 ) return false;
+#ifdef __LOCAL_IMAGE_TEST__
+			int ret = findFileName("/home/nanosystem/disk/img/", tofcamImage.localFileName);
+			if( ret == 0 ) return false;
 			tofcamImage.localFileTest = 1;
 			tofcamImage.localFileTotalCnt = dirCnt-2;	// ./ ../
 
@@ -2123,12 +2106,6 @@ bool NSL3130AA::Capture( void** output, int timeout )
 			else{
 				cv::resize( image, resizeFrame, cv::Size( tofcamInfo.width, tofcamInfo.height ) , cv::INTER_LANCZOS4);
 				cv::resize( imageDist, resizeDist, cv::Size( tofcamInfo.width, tofcamInfo.height ), cv::INTER_LANCZOS4);
-
-				if( tofcamInfo.width == 512 && tofcamInfo.height == 384 ){
-					cv::Mat empty_image(128, 512, CV_8UC3, Scalar(128,128,128));
-					cv::vconcat(empty_image, resizeFrame, resizeFrame);
-					cv::vconcat(empty_image, resizeDist, resizeDist);
-				}
 			}
 
 			tmChk.setEnd();
@@ -2164,6 +2141,7 @@ void NSL3130AA::closeLidar()
 {
 	tofcamInfo.captureNetType = NONEMODEL_TYPE;
 
+#ifndef __LOCAL_IMAGE_TEST__
 	if( exit_thtread == 0 ){
 	    exit_thtread = 1;
 
@@ -2189,31 +2167,30 @@ void NSL3130AA::closeLidar()
 			tofcamInfo.data_sock = 0;
 		}
 	}
-
+#endif
 }
 
-void NSL3130AA::startCaptureCommand(int netType, void *pCapOption )
+void NSL3130AA::startCaptureCommand(int netType, CaptureOptions &camOpt )
 {
-	CaptureOptions *pCapOpt = (CaptureOptions *)pCapOption;
-	maxDistanceValue = (pCapOpt->maxDistance <= 0 || pCapOpt->maxDistance > MAX_DISTANCEVALUE) ? MAX_DISTANCEVALUE : pCapOpt->maxDistance;
+	maxDistanceValue = (camOpt.maxDistance <= 0 || camOpt.maxDistance > MAX_DISTANCEVALUE) ? MAX_DISTANCEVALUE : camOpt.maxDistance;
 
-	tofcamInfo.tofcamModeType = pCapOpt->captureType;
-	tofcamInfo.config.integrationTimeGrayScale = pCapOpt->grayIntegrationTime;
-	tofcamInfo.config.integrationTime3D = pCapOpt->integrationTime;
-	tofcamInfo.config.minAmplitude = pCapOpt->minAmplitude;
-	tofcamInfo.config.dualbeamState = pCapOpt->dualbeamState;
-	tofcamInfo.config.hdr_mode = pCapOpt->hdr_mode;
-	tofcamInfo.config.deeplearning = pCapOpt->deeplearning;
+	tofcamInfo.tofcamModeType = camOpt.captureType;
+	tofcamInfo.config.integrationTimeGrayScale = camOpt.grayIntegrationTime;
+	tofcamInfo.config.integrationTime3D = camOpt.integrationTime;
+	tofcamInfo.config.minAmplitude = camOpt.minAmplitude;
+	tofcamInfo.config.dualbeamState = camOpt.dualbeamState;
+	tofcamInfo.config.hdr_mode = camOpt.hdr_mode;
+	tofcamInfo.config.deeplearning = camOpt.deeplearning;
 
-	tofcamInfo.config.medianFilterEnable = pCapOpt->medianFilterEnable;
-	tofcamInfo.config.edgeFilterThreshold = pCapOpt->edgeThresHold;
-	tofcamInfo.config.averageFilterEnable = pCapOpt->averageFilterEnable;
-	tofcamInfo.config.temporalFilterFactorActual = pCapOpt->temporalFilterFactorActual;
-	tofcamInfo.config.temporalFilterThreshold = pCapOpt->temporalFilterThreshold;
-	tofcamInfo.config.interferenceUseLashValueEnable = pCapOpt->interferenceUseLashValueEnable;
-	tofcamInfo.config.interferenceLimit = pCapOpt->interferenceLimit;
+	tofcamInfo.config.medianFilterEnable = camOpt.medianFilterEnable;
+	tofcamInfo.config.edgeFilterThreshold = camOpt.edgeThresHold;
+	tofcamInfo.config.averageFilterEnable = camOpt.averageFilterEnable;
+	tofcamInfo.config.temporalFilterFactorActual = camOpt.temporalFilterFactorActual;
+	tofcamInfo.config.temporalFilterThreshold = camOpt.temporalFilterThreshold;
+	tofcamInfo.config.interferenceUseLashValueEnable = camOpt.interferenceUseLashValueEnable;
+	tofcamInfo.config.interferenceLimit = camOpt.interferenceLimit;
 	
-#ifndef __REAL_IMAGE_TEST__
+#ifndef __LOCAL_IMAGE_TEST__
 	reqIntegrationTime(tofcamInfo.control_sock);
 	reqMinAmplitude(tofcamInfo.control_sock);
 	reqFilterParameter(tofcamInfo.control_sock);
@@ -2233,7 +2210,7 @@ void NSL3130AA::startCaptureCommand(int netType, void *pCapOption )
 	tofcamInfo.captureNetType = netType;
 #endif
 
-	printf("start Capture~~~ intTime = %d/%d captureType =%d\n", pCapOpt->integrationTime, pCapOpt->grayIntegrationTime, pCapOpt->captureType);
+	printf("start Capture~~~ intTime = %d/%d captureType =%d\n", camOpt.integrationTime, camOpt.grayIntegrationTime, camOpt.captureType);
 	
 }
 
@@ -2309,7 +2286,7 @@ NSL3130AA::NSL3130AA( std::string ipaddr )
 	}
 #endif
 
-#ifndef __REAL_IMAGE_TEST__
+#ifndef __LOCAL_IMAGE_TEST__
 	if( tofcamInfo.control_sock == 0 ) {
 		if( ttySerial ){
 			ttySerial = false;
@@ -2341,6 +2318,7 @@ NSL3130AA::NSL3130AA( std::string ipaddr )
 #else
 	pthread_create(&threadID, NULL, NSL3130AA::rxWrapper, this);
 #endif
+
 #endif
 }
 

@@ -24,12 +24,13 @@
 #define __NSL_FRAME_H__
 
 #define HAVE_CV_CUDA
+#define DEEP_LEARNING
 
 #define DISPLAY_WIDTH		640
 #define DISPLAY_HEIGHT		480
 
 #define MODEL_WIDTH			640
-#define MODEL_HEIGHT		640
+#define MODEL_HEIGHT		480
 
 #define V4_MODEL_WIDTH		512
 #define V4_MODEL_HEIGHT		512

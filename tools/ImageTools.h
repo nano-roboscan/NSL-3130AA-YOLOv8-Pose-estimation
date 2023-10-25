@@ -28,6 +28,9 @@
 #include <opencv2/highgui.hpp>
 #include "YoloDet.h"
 #include "YoloPose.h"
+#include "NSLFrame.h"
+
+#ifdef DEEP_LEARNING
 
 class ImageTools {
 public :
@@ -39,5 +42,6 @@ public :
 
 };
 
+#endif
 
 #endif //YOLOV8_IMAGETOOLS_H

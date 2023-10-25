@@ -25,13 +25,16 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
+#include "NSLFrame.h"
+
+#ifdef DEEP_LEARNING
 
 class YoloDet {
 
 
 private:
     cv::dnn::Net net;
-    const cv::Size model640Shape = cv::Size(640, 640);
+    const cv::Size model640Shape = cv::Size(640, 480);
     const cv::Size model512Shape = cv::Size(512, 512);
 
     int classesCount = 80;
@@ -54,6 +57,6 @@ public:
 
     int detect(cv::Mat &mat);
 };
-
+#endif
 
 #endif //YOLOV8_YOLODET_H

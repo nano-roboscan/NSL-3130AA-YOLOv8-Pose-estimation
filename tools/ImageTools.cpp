@@ -38,6 +38,8 @@ typedef enum pose_position_{
 	right_ankle_position,
 }pose_position;
 
+#ifdef DEEP_LEARNING
+
 void ImageTools::drawSkeleton(cv::Mat &image, YoloPose::Person &item)
 {
     auto poseColor = cv::Scalar(0,0,255);
@@ -153,5 +155,5 @@ void ImageTools::draw(std::vector<YoloDet::Detection> &detections, cv::Mat &imag
     }
 }
 
-
+#endif
 

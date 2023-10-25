@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include "videoSource.h"
-#include "timecheck.h"
+#include "timeCheck.h"
 
 
 int signal_recieved = 0;
@@ -29,37 +29,38 @@ int main(int argc, char **argv) {
 	printf("=================== YOLO CPU MODE ===================\n");
 #endif
 
-	videoSource* lidarSrc = videoSource::initAppCfg(argc, argv, &camOpt);
+	videoSource* lidarSrc = videoSource::initAppCfg(argc, argv, camOpt);
 
-	lidarSrc->initDeepLearning(&camOpt);
-	lidarSrc->setLidarOption(YOLO_TYPE, &camOpt);
+	lidarSrc->initDeepLearning(camOpt);
+	lidarSrc->setLidarOption(YOLO_TYPE, camOpt);
 	TimeCheck tmChk;
 	tmChk.setPrint(false);
 
 	while ( !signal_recieved )
 	{
 		tmChk.setBegin();
-		if (!lidarSrc->captureLidar(3000, &camOpt)) {
+		if (!lidarSrc->captureLidar(3000, camOpt)) {
 			printf("capture : failed...\n");
 			break;
 		}
 
 		cv::Mat grayMat = *(cv::Mat*)camOpt.frameMat;
 		cv::Mat distMat = *(cv::Mat*)camOpt.distMat;
+
 		tmChk.setEnd();
 		tmChk.printTime("capture");
 
 		tmChk.setBegin();
-		camOpt.detectingCnt = lidarSrc->deepLearning(grayMat, &camOpt);
+		camOpt.detectingCnt = lidarSrc->deepLearning(grayMat, camOpt);
 		tmChk.setEnd();
 		tmChk.printTime("detection");
 		
 		tmChk.setBegin();
-		lidarSrc->drawCaption(grayMat, distMat, &camOpt);
+		lidarSrc->drawCaption(grayMat, distMat, camOpt);
 		tmChk.setEnd();
 		tmChk.printTime("draw");
 
-		if (lidarSrc->prockey(&camOpt) == 27) // ESC
+		if (lidarSrc->prockey(camOpt) == 27) // ESC
 			break;
 	}
 

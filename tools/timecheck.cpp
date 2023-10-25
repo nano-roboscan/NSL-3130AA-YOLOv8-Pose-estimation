@@ -1,4 +1,4 @@
-#include "timecheck.h"
+#include "timeCheck.h"
 
 void TimeCheck::setPrint(bool PRINT_ON)
 {

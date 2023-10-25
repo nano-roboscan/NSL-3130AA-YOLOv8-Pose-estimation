@@ -21,7 +21,6 @@
  */
 #include "YoloDet.h"
 #include "ImageTools.h"
-#include "NSLFrame.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -29,6 +28,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifdef DEEP_LEARNING
 const int NUM_CLASSES = 1;
 
 void YoloDet::init(const std::string &modelPath, const std::string &modelCfg, float threshold, int modeltype ) 
@@ -200,3 +200,6 @@ int YoloDet::detect(cv::Mat &mat)
 
     return detections.size();
 }
+
+#endif
+

@@ -21,7 +21,8 @@
  */
 #include "YoloPose.h"
 #include "ImageTools.h"
-#include "NSLFrame.h"
+
+#ifdef DEEP_LEARNING
 
 void YoloPose::init(const std::string &modelPath, float threshold, int modeltype) {
 
@@ -165,3 +166,6 @@ YoloPose::Person::Person(cv::Rect2i _box, float _score, std::vector<Keypoint> &_
 inline static float clamp(float val, float min, float max) {
     return val > min ? (val < max ? val : max) : min;
 }
+
+#endif
+
