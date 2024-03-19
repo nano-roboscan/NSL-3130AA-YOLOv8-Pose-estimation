@@ -26,9 +26,6 @@
 #define HAVE_CV_CUDA
 #define DEEP_LEARNING
 
-#define DISPLAY_WIDTH		640
-#define DISPLAY_HEIGHT		480
-
 #define MODEL_WIDTH			640
 #define MODEL_HEIGHT		480
 

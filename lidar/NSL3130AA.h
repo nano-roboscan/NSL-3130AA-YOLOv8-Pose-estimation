@@ -165,8 +165,8 @@ typedef struct Tofcam660Info_{
 	int receivedBytes;
 	double meanAvg;
 	
-	int width;
-	int height;
+	int imageWidth;
+	int imageHeight;
 
 	int usedPointCloud;
 }TOFCAM660_INFO, *PTOFCAM660_INFO;

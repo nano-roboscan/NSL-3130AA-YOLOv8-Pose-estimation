@@ -53,8 +53,6 @@
 
 using namespace cv;
 
-//#define __LOCAL_IMAGE_TEST__
-
 //#define TOFCAM660_ROTATE_IMAGE_90
 //#define ROTATE_IMAGE_ADJUST_ROI
 
@@ -1827,51 +1825,6 @@ int NSL3130AA::rxSerial(uint8_t *socketbuff, int buffLen, bool addQue)
 #endif
 
 
-#ifdef __LOCAL_IMAGE_TEST__
-#include <dirent.h>
-
-struct	dirent **namelist = NULL;
-static int dirCnt = 0;
-static int nReadCnt = 0;
-
-static int findFileName( const char* path, char *findName )
-{	
-	findName[0] = 0;
-	
-	if( namelist == NULL ){
-		if((dirCnt = scandir(path, &namelist, NULL, alphasort)) == -1) {
-		   fprintf(stderr, "%s 디렉토리 조회 오류: %s\n", path, strerror(errno));
-		   return 0;
-		}
-	}
-
-	if( nReadCnt == dirCnt )
-	{	
-		// 건별 데이터 메모리 해제
-		for(int idx = 0; idx < dirCnt; idx++) {
-		   free(namelist[idx]);
-		}
-		
-		// namelist에 대한 메모리 해제
-		free(namelist);
-		return 0;
-	}
-
-
-//	printf("readcnt = %d dircnt = %d\n", readCnt, dirCnt);
-	while( strcmp(namelist[nReadCnt]->d_name,".") == 0 || strcmp(namelist[nReadCnt]->d_name,"..") == 0 ){
-		nReadCnt++;
-		continue;
-	}
-
-	sprintf(findName,"%s", namelist[nReadCnt]->d_name);
-	nReadCnt++;
-	return nReadCnt;
-
-}
-#endif
-
-
 
 //////////////////////////////////// External Interface ////////////////////////////////////////
 
@@ -1900,25 +1853,25 @@ int NSL3130AA::getVideoHeight(){
 int NSL3130AA::getWidthDiv()				
 { 
 	if( tofcamInfo.rotate_90 != 0 ){
-		return DISPLAY_HEIGHT/NSL3130_IMAGE_HEIGHT;
+		return MODEL_HEIGHT/NSL3130_IMAGE_HEIGHT;
 	}
-	return DISPLAY_WIDTH/NSL3130_IMAGE_WIDTH; 
+	return MODEL_WIDTH/NSL3130_IMAGE_WIDTH; 
 }
 
 int NSL3130AA::getHeightDiv()
 {
 	if( tofcamInfo.rotate_90 != 0 ){
-		return DISPLAY_WIDTH/NSL3130_IMAGE_WIDTH;
+		return MODEL_WIDTH/NSL3130_IMAGE_WIDTH;
 	}
-	return DISPLAY_HEIGHT/NSL3130_IMAGE_HEIGHT; 
+	return MODEL_HEIGHT/NSL3130_IMAGE_HEIGHT; 
 }
 
 int NSL3130AA::getWidth()				
 { 
 	if( tofcamInfo.rotate_90 != 0 ){
-		return DISPLAY_HEIGHT;
+		return tofcamInfo.imageHeight;
 	}
-	return DISPLAY_WIDTH; 
+	return tofcamInfo.imageWidth; 
 }
 
 /**
@@ -1927,17 +1880,17 @@ int NSL3130AA::getWidth()
 int NSL3130AA::getHeight()
 {
 	if( tofcamInfo.rotate_90 != 0 ){
-		return DISPLAY_WIDTH;
+		return tofcamInfo.imageWidth;
 	}
-	return DISPLAY_HEIGHT; 
+	return tofcamInfo.imageHeight; 
 }
 
 int NSL3130AA::getDLWidth()				
 { 
 	if( tofcamInfo.rotate_90 != 0 ){
-		return tofcamInfo.height;
+		return tofcamInfo.imageHeight;
 	}
-	return tofcamInfo.width; 
+	return tofcamInfo.imageWidth; 
 }
 
 /**
@@ -1946,15 +1899,15 @@ int NSL3130AA::getDLWidth()
 int NSL3130AA::getDLHeight()
 {
 	if( tofcamInfo.rotate_90 != 0 ){
-		return tofcamInfo.width;
+		return tofcamInfo.imageWidth;
 	}
-	return tofcamInfo.height; 
+	return tofcamInfo.imageHeight; 
 }
 
 void NSL3130AA::setCameraSize(int width, int height)
 {
-	tofcamInfo.width = width;
-	tofcamInfo.height = height;
+	tofcamInfo.imageWidth = width;
+	tofcamInfo.imageHeight = height;
 }
 
 
@@ -2031,36 +1984,12 @@ bool NSL3130AA::Capture( void** output, int timeout )
 	int frame_cnt = 0;
 	while(!exit_thtread)
 	{
-		if( GET_BUFF_CNT(tofcamBuff, NSL3130_ETH_BUFF_SIZE) > 0
-#ifdef __LOCAL_IMAGE_TEST__
-			|| true
-#endif
-		){
+		if( GET_BUFF_CNT(tofcamBuff, NSL3130_ETH_BUFF_SIZE) > 0 ){
 			tmChk.setEnd();
 			tmChk.printTime("RxTime");
 
 			tmChk.setBegin();
 
-#ifdef __LOCAL_IMAGE_TEST__
-			int ret = findFileName("/home/nanosystem/disk/img/", tofcamImage.localFileName);
-			if( ret == 0 ) return false;
-			tofcamImage.localFileTest = 1;
-			tofcamImage.localFileTotalCnt = dirCnt-2;	// ./ ../
-
-			char totalPath[400];
-			sprintf(totalPath,"/home/nanosystem/disk/img/%s",tofcamImage.localFileName);
-			cv::Mat imageFull = imread(totalPath, 1);
-
-//			printf("imgCnt = %d, localFileName = %s w:%d h:%d\n", nReadCnt, tofcamImage.localFileName, imageFull.cols, imageFull.rows);
-
-			cv::resize( imageFull, imageFull, cv::Size( 1280, 480 ), 0, 0, cv::INTER_LANCZOS4 );// INTER_CUBIC , INTER_LANCZOS4 
-
-			cv::Mat image = imageFull(Rect(0,0,640,480));
-			cv::Mat imageDist = imageFull(Rect(640,0,640,480));
-	
-			cv::resize( image, image, cv::Size( 320, 240 ), 0, 0, cv::INTER_LANCZOS4 );// INTER_CUBIC , INTER_LANCZOS4 
-			cv::resize( imageDist, imageDist, cv::Size( 320, 240 ), 0, 0, cv::INTER_LANCZOS4 );// INTER_CUBIC , INTER_LANCZOS4 
-#else
 			cv::Mat image(NSL3130_IMAGE_HEIGHT, NSL3130_IMAGE_WIDTH, CV_8UC3, Scalar(255,255,255));	
 			cv::Mat imageDist(NSL3130_IMAGE_HEIGHT, NSL3130_IMAGE_WIDTH, CV_8UC3, Scalar(255,255,255));			
 
@@ -2088,7 +2017,7 @@ bool NSL3130AA::Capture( void** output, int timeout )
 				getGrayscaled(image, tofcamInfo.usedPointCloud != 0);
 				imageDist = image;
 			}
-#endif
+
 			tmChk.setEnd();
 			tmChk.printTime("RxConvert");
 
@@ -2100,12 +2029,12 @@ bool NSL3130AA::Capture( void** output, int timeout )
 				cv::rotate(image, image, ROTATE_90_CLOCKWISE);
 				cv::rotate(imageDist, imageDist, ROTATE_90_CLOCKWISE);
 
-				cv::resize( image, resizeFrame, cv::Size( tofcamInfo.height, tofcamInfo.width ) , cv::INTER_LANCZOS4);
-				cv::resize( imageDist, resizeDist, cv::Size( tofcamInfo.height, tofcamInfo.width ), cv::INTER_LANCZOS4);
+				cv::resize( image, resizeFrame, cv::Size( tofcamInfo.imageHeight, tofcamInfo.imageWidth ) , cv::INTER_LANCZOS4);
+				cv::resize( imageDist, resizeDist, cv::Size( tofcamInfo.imageHeight, tofcamInfo.imageWidth ), cv::INTER_LANCZOS4);
 			}
 			else{
-				cv::resize( image, resizeFrame, cv::Size( tofcamInfo.width, tofcamInfo.height ) , cv::INTER_LANCZOS4);
-				cv::resize( imageDist, resizeDist, cv::Size( tofcamInfo.width, tofcamInfo.height ), cv::INTER_LANCZOS4);
+				cv::resize( image, resizeFrame, cv::Size( tofcamInfo.imageWidth, tofcamInfo.imageHeight ) , cv::INTER_LANCZOS4);
+				cv::resize( imageDist, resizeDist, cv::Size( tofcamInfo.imageWidth, tofcamInfo.imageHeight ), cv::INTER_LANCZOS4);
 			}
 
 			tmChk.setEnd();
@@ -2141,7 +2070,6 @@ void NSL3130AA::closeLidar()
 {
 	tofcamInfo.captureNetType = NONEMODEL_TYPE;
 
-#ifndef __LOCAL_IMAGE_TEST__
 	if( exit_thtread == 0 ){
 	    exit_thtread = 1;
 
@@ -2167,7 +2095,6 @@ void NSL3130AA::closeLidar()
 			tofcamInfo.data_sock = 0;
 		}
 	}
-#endif
 }
 
 void NSL3130AA::startCaptureCommand(int netType, CaptureOptions &camOpt )
@@ -2190,7 +2117,6 @@ void NSL3130AA::startCaptureCommand(int netType, CaptureOptions &camOpt )
 	tofcamInfo.config.interferenceUseLashValueEnable = camOpt.interferenceUseLashValueEnable;
 	tofcamInfo.config.interferenceLimit = camOpt.interferenceLimit;
 	
-#ifndef __LOCAL_IMAGE_TEST__
 	reqIntegrationTime(tofcamInfo.control_sock);
 	reqMinAmplitude(tofcamInfo.control_sock);
 	reqFilterParameter(tofcamInfo.control_sock);
@@ -2208,7 +2134,6 @@ void NSL3130AA::startCaptureCommand(int netType, CaptureOptions &camOpt )
 	if( ttySerial == false ) reqStreamingFrame(tofcamInfo.control_sock);
 #endif	
 	tofcamInfo.captureNetType = netType;
-#endif
 
 	printf("start Capture~~~ intTime = %d/%d captureType =%d\n", camOpt.integrationTime, camOpt.grayIntegrationTime, camOpt.captureType);
 	
@@ -2274,8 +2199,8 @@ NSL3130AA::NSL3130AA( std::string ipaddr )
 //		tofcamInfo.config.compensationFlag |= MASK_AMBIENT_LIGHT_COMPENSATION;
 	tofcamInfo.config.minAmplitude = 50;	// 0x32
 
-	tofcamInfo.width = MODEL_WIDTH;
-	tofcamInfo.height = MODEL_HEIGHT;
+	tofcamInfo.imageWidth = MODEL_WIDTH;
+	tofcamInfo.imageHeight = MODEL_HEIGHT;
 
 	printf("ipaddr = %s\n", mIpaddr.c_str());
 
@@ -2286,7 +2211,6 @@ NSL3130AA::NSL3130AA( std::string ipaddr )
 	}
 #endif
 
-#ifndef __LOCAL_IMAGE_TEST__
 	if( tofcamInfo.control_sock == 0 ) {
 		if( ttySerial ){
 			ttySerial = false;
@@ -2317,8 +2241,6 @@ NSL3130AA::NSL3130AA( std::string ipaddr )
 	viewer = rgbVis(point_cloud_ptr);
 #else
 	pthread_create(&threadID, NULL, NSL3130AA::rxWrapper, this);
-#endif
-
 #endif
 }
 

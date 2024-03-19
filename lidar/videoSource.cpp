@@ -368,8 +368,8 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions &
 	getMouseEvent(&mouse_xpos, &mouse_ypos);
 
 	cv::Mat drawMat;
-	int display_width = camOpt.isRotate ? DISPLAY_HEIGHT : DISPLAY_WIDTH;
-	int display_height = camOpt.isRotate ? DISPLAY_WIDTH : DISPLAY_HEIGHT;
+	int display_width = camOpt.isRotate ? MODEL_HEIGHT : MODEL_WIDTH;
+	int display_height = camOpt.isRotate ? MODEL_WIDTH : MODEL_HEIGHT;
 
 	// distance + gray image concat
 #ifdef HAVE_CV_CUDA
