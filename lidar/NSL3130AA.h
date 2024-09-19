@@ -363,6 +363,7 @@ private:
 	void reqGrayscaleLedControl(SOCKET control_sock, int ledOnOff);
 	void reqDualBeam(int control_sock);
 	void reqDeepLearning(int control_sock);
+	void drawHistogram(cv::Mat &bgr_image);
 
 	SOCKET InitializeControlsocket(void);
 	SOCKET InitializeDataSocket(void);

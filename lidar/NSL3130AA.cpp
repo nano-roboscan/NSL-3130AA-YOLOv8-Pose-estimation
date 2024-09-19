@@ -1825,6 +1825,36 @@ int NSL3130AA::rxSerial(uint8_t *socketbuff, int buffLen, bool addQue)
 #endif
 
 
+void NSL3130AA::drawHistogram(cv::Mat &bgr_image)
+{
+	cv::Mat grayImg, hist_img;
+	cv::cvtColor(bgr_image, grayImg, cv::COLOR_BGR2GRAY);
+	cv::equalizeHist(grayImg, hist_img);
+	cv::cvtColor(hist_img, bgr_image, cv::COLOR_GRAY2BGR);
+
+#if 1
+	cv::Mat lab_image;
+	cv::cvtColor(bgr_image, lab_image, cv::COLOR_BGR2Lab);
+
+	// Extract the L channel
+	std::vector<cv::Mat> lab_planes(3);
+	cv::split(lab_image, lab_planes);  // now we have the L image in lab_planes[0]
+	
+	// apply the CLAHE algorithm to the L channel
+	cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
+	clahe->setClipLimit(4);
+//	clahe->setTilesGridSize(cv::Size(8, 8));
+	cv::Mat dst;
+	clahe->apply(lab_planes[0], dst);
+	
+	// Merge the the color planes back into an Lab image
+	dst.copyTo(lab_planes[0]);
+	cv::merge(lab_planes, lab_image);
+	
+	// convert back to RGB
+	cv::cvtColor(lab_image, bgr_image, cv::COLOR_Lab2BGR);
+#endif
+}
 
 //////////////////////////////////// External Interface ////////////////////////////////////////
 
@@ -2040,6 +2070,8 @@ bool NSL3130AA::Capture( void** output, int timeout )
 			tmChk.setEnd();
 			tmChk.printTime("reSize");
 
+			drawHistogram(resizeFrame);
+			
 			tofcamImage.frameMat = &resizeFrame;
 			tofcamImage.distMat = &resizeDist;		
 			tofcamImage.pDistanceTable = distanceTable;
