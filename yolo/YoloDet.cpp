@@ -60,7 +60,7 @@ void YoloDet::init(const std::string &modelPath, const std::string &modelCfg, fl
 	}
 }
 
-int YoloDet::detect(cv::Mat &mat) 
+int YoloDet::detect(cv::Mat &mat, CaptureOptions &camOpt) 
 {
     static cv::Mat blob;
     static std::vector<cv::Mat> outputs;
@@ -124,7 +124,7 @@ int YoloDet::detect(cv::Mat &mat)
 			detections.push_back(result);
 		}
 
-		ImageTools::draw(detections, mat, cv::Scalar(0, 255, 0));
+		ImageTools::draw(detections, mat, camOpt);
 	}
 	else{ // YOLO_V4_DETECTION_TYPE
 #if 0
@@ -192,7 +192,7 @@ int YoloDet::detect(cv::Mat &mat)
 			}
         }
 #endif
-		ImageTools::draw(detections, mat, cv::Scalar(128, 0, 255));
+		ImageTools::draw(detections, mat, camOpt);
 		
 	}
 

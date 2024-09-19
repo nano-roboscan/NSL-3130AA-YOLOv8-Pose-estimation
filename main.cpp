@@ -52,6 +52,7 @@ int main(int argc, char **argv) {
 
 		tmChk.setBegin();
 		camOpt.detectingCnt = lidarSrc->deepLearning(grayMat, camOpt);
+		if( camOpt.detectingCnt >= camOpt.nonDetectingCnt ) camOpt.detectingCnt-=camOpt.nonDetectingCnt;
 		tmChk.setEnd();
 		tmChk.printTime("detection");
 		

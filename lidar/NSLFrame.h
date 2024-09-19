@@ -32,6 +32,8 @@
 #define V4_MODEL_WIDTH		512
 #define V4_MODEL_HEIGHT		512
 
+#define LIDAR_IMAGE_WIDTH 		320
+#define LIDAR_IMAGE_HEIGHT		240
 
 #define YOLO_V8_POSE_TYPE				0
 #define YOLO_V8_POSE_DETECTION_TYPE		1
@@ -126,6 +128,8 @@ typedef struct CaptureOptions_{
 	int maxDistance;	
 	int lidarType;
 	int detectingCnt;
+	int nonDetectingCnt;
+	int detectDistance;
 	
 
 }CaptureOptions;

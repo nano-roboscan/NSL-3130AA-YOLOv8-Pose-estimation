@@ -60,7 +60,7 @@ public:
 
     void init(const std::string &modelPath, float threshold, int modeltype);
 
-    int detect(cv::Mat &mat);
+    int detect(cv::Mat &mat, CaptureOptions &camOpt);
 };
 
 inline static float clamp(float val, float min, float max);

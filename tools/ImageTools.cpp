@@ -36,6 +36,7 @@ typedef enum pose_position_{
 	right_knee_position,
 	left_ankle_position,
 	right_ankle_position,
+	max_position
 }pose_position;
 
 #ifdef DEEP_LEARNING
@@ -99,27 +100,62 @@ void ImageTools::drawSkeleton(cv::Mat &image, YoloPose::Person &item)
 	cv::line(image, item.kp[right_knee_position].position, item.kp[right_ankle_position].position, poseColor, thickness);
 }
 
+bool ImageTools::availableCenterPosition(cv::Point2d center, CaptureOptions &camOpt)
+{
+	int xpos = center.x/2;
+	int ypos = center.y/2;
+	int dist_pos = ypos*LIDAR_IMAGE_WIDTH + xpos;
+	int distance_mm = camOpt.pDistanceTable[dist_pos];
 
-void ImageTools::drawPose(std::vector<YoloPose::Person> &detections, cv::Mat &image) {
+	if( camOpt.detectDistance == 0 || distance_mm <= camOpt.detectDistance ){
+		return true;
+	}
+
+	return false;
+}
+
+
+void ImageTools::drawPose(std::vector<YoloPose::Person> &detections, cv::Mat &image, CaptureOptions &camOpt) {
     auto textColor = cv::Scalar(255, 255, 255);
     auto boxColor = cv::Scalar(0, 255, 0);
+    auto boxColorGray = cv::Scalar(114, 114, 114);
 	int thickness = 2;
 
     for (YoloPose::Person &item: detections) {
-        cv::rectangle(image, item.box, boxColor, thickness);
 
         std::string infoString = std::to_string(item.score);
         cv::Size textSize = cv::getTextSize(infoString, cv::QT_FONT_NORMAL, 1, 1, nullptr);
         cv::Rect textBox(item.box.x, item.box.y - 40, textSize.width + 10, textSize.height + 20);
 
-        cv::rectangle(image, textBox, boxColor, cv::FILLED);
-        cv::putText(image, infoString, cv::Point(item.box.x + 5, item.box.y - 10), cv::FONT_HERSHEY_DUPLEX, 1, textColor, 1, 0);
+		bool dropPerson = false;
 
+		
+		cv::Point2d center_shoulder;
+		center_shoulder.x = item.kp[left_shoulder_position].position.x + (item.kp[right_shoulder_position].position.x - item.kp[left_shoulder_position].position.x)/2 ;
+		center_shoulder.y = item.kp[left_shoulder_position].position.y;
+		
+		cv::Point2d center_hip;
+		center_hip.x = item.kp[left_hip_position].position.x + (item.kp[right_hip_position].position.x - item.kp[left_hip_position].position.x)/2 ;
+		center_hip.y = item.kp[left_hip_position].position.y;
+
+
+		if( availableCenterPosition(center_shoulder, camOpt ) || availableCenterPosition(center_hip, camOpt ) )
+		{
+			cv::rectangle(image, textBox, boxColor, cv::FILLED);
+			cv::rectangle(image, item.box, boxColor, thickness);
+		}
+		else{
+			cv::rectangle(image, textBox, boxColorGray, cv::FILLED);
+			cv::rectangle(image, item.box, boxColorGray, thickness);
+			camOpt.nonDetectingCnt++;
+		}
+
+        cv::putText(image, infoString, cv::Point(item.box.x + 5, item.box.y - 10), cv::FONT_HERSHEY_DUPLEX, 1, textColor, 1, 0);
 		drawSkeleton(image, item);
     }
 }
 
-void ImageTools::draw(std::vector<YoloPose::Person> &detections, cv::Mat &image) {
+void ImageTools::draw(std::vector<YoloPose::Person> &detections, cv::Mat &image, CaptureOptions &camOpt) {
     auto textColor = cv::Scalar(255, 255, 255);
     auto boxColor = cv::Scalar(0, 255, 0);
 	int thickness = 2;
@@ -137,8 +173,9 @@ void ImageTools::draw(std::vector<YoloPose::Person> &detections, cv::Mat &image)
 }
 
 
-void ImageTools::draw(std::vector<YoloDet::Detection> &detections, cv::Mat &image, cv::Scalar boxColor) {
+void ImageTools::draw(std::vector<YoloDet::Detection> &detections, cv::Mat &image, CaptureOptions &camOpt) {
     auto textColor = cv::Scalar(255, 255, 255);
+    auto boxColor = cv::Scalar(0, 255, 0);
 	int thickness = 2;
 
     for (YoloDet::Detection &item: detections) {

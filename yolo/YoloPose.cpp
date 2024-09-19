@@ -46,7 +46,7 @@ void YoloPose::init(const std::string &modelPath, float threshold, int modeltype
 	}
 }
 
-int YoloPose::detect(cv::Mat &mat) 
+int YoloPose::detect(cv::Mat &mat, CaptureOptions &camOpt) 
 {
     static cv::Mat blob;
     static std::vector<cv::Mat> outputs;
@@ -145,9 +145,9 @@ int YoloPose::detect(cv::Mat &mat)
     }
 
 	if( modelType == YOLO_V8_POSE_TYPE )
-		ImageTools::drawPose(result, mat);
+		ImageTools::drawPose(result, mat, camOpt);
 	else // YOLO_V8_POSE_DETECTION_TYPE
-		ImageTools::draw(result, mat);
+		ImageTools::draw(result, mat, camOpt);
 	
     return result.size();
 }

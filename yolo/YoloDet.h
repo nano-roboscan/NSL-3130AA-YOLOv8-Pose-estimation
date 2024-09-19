@@ -55,7 +55,7 @@ public:
 
     void init(const std::string &modelPath, const std::string &modelCfg, float threshold, int modeltype);
 
-    int detect(cv::Mat &mat);
+    int detect(cv::Mat &mat, CaptureOptions &camOpt);
 };
 #endif
 

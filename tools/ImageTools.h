@@ -36,9 +36,10 @@ class ImageTools {
 public :
 
 	static void drawSkeleton(cv::Mat &image, YoloPose::Person &item);
-	static void drawPose(std::vector<YoloPose::Person> &detections, cv::Mat &image);
-    static void draw(std::vector<YoloPose::Person> &detections, cv::Mat &image);
-    static void draw(std::vector<YoloDet::Detection> &detections, cv::Mat &image, cv::Scalar boxColor);
+	static void drawPose(std::vector<YoloPose::Person> &detections, cv::Mat &image, CaptureOptions &camOpt);
+    static void draw(std::vector<YoloPose::Person> &detections, cv::Mat &image, CaptureOptions &camOpt);
+    static void draw(std::vector<YoloDet::Detection> &detections, cv::Mat &image, CaptureOptions &camOpt);
+	static bool availableCenterPosition(cv::Point2d center, CaptureOptions &camOpt);
 
 };
 

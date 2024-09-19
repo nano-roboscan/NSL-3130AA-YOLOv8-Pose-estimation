@@ -155,6 +155,7 @@ videoSource *videoSource::initAppCfg(int argc, char **argv, CaptureOptions &camO
 	camOpt.grayIntegrationTime = find_int_arg(argc, argv, (char *)"-grayintTime", 1500);//100;
 	camOpt.maxDistance = find_int_arg(argc, argv, (char *)"-maxDistance", 12500);
 	camOpt.minAmplitude = find_int_arg(argc, argv, (char *)"-amplitudeMin", 50);
+	camOpt.detectDistance = find_int_arg(argc, argv, (char *)"-detectDistance", 0);
 
 	camOpt.edgeThresHold = find_int_arg(argc, argv, (char *)"-edgeThresHold", 0);
 	camOpt.medianFilterSize = find_int_arg(argc, argv, (char *)"-medianFilterSize", 0);
@@ -310,7 +311,7 @@ void videoSource::initDeepLearning( CaptureOptions &camOpt )
 		cv::Mat initImage(MODEL_WIDTH, MODEL_HEIGHT, CV_8UC3, cv::Scalar(255,255,255)); 
 		yoloPose = new YoloPose();
 		yoloPose->init("../data/yolov8n-pose.onnx", camOpt.detectThreshold, camOpt.modelType);
-		yoloPose->detect(initImage);
+		yoloPose->detect(initImage, camOpt);
 	}
 	else{
 		yoloDet = new YoloDet();
@@ -318,14 +319,14 @@ void videoSource::initDeepLearning( CaptureOptions &camOpt )
 		if(camOpt.modelType == YOLO_V8_DETECTION_TYPE){
 			cv::Mat initImage(MODEL_WIDTH, MODEL_HEIGHT, CV_8UC3, cv::Scalar(255,255,255)); 
 			yoloDet->init("../data/yolov8n.onnx", "", camOpt.detectThreshold, camOpt.modelType);
-			yoloDet->detect(initImage);
+			yoloDet->detect(initImage, camOpt);
 		}
 		else{ // camOpt.modelType == YOLO_V4_DETECTION_TYPE
 			cv::Mat initImage(V4_MODEL_WIDTH, V4_MODEL_HEIGHT, CV_8UC3, cv::Scalar(255,255,255)); 
 			yoloDet->init("../data/yolov4-csp.weights", "../data/yolov4-csp.cfg", camOpt.detectThreshold, camOpt.modelType); // 8fps
 			setCameraSize(V4_MODEL_WIDTH, V4_MODEL_HEIGHT);
 			//setCameraSize(512, 384);
-			yoloDet->detect(initImage);
+			yoloDet->detect(initImage, camOpt);
 		}
 	}
 #endif	
@@ -337,11 +338,12 @@ int videoSource::deepLearning( cv::Mat &imageLidar, CaptureOptions &camOpt )
 	int retSize = 0;
 	
 #ifdef DEEP_LEARNING
+	camOpt.nonDetectingCnt = 0;
 	if( camOpt.modelType == YOLO_V8_POSE_TYPE || camOpt.modelType == YOLO_V8_POSE_DETECTION_TYPE ){
-		retSize = yoloPose->detect(imageLidar);
+		retSize = yoloPose->detect(imageLidar, camOpt);
 	}
 	else {
-		retSize = yoloDet->detect(imageLidar);
+		retSize = yoloDet->detect(imageLidar, camOpt);
 	}
 
 	/*
