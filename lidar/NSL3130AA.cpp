@@ -606,6 +606,12 @@ int NSL3130AA::getDistanceAmplitude(cv::Mat &imageDistance, cv::Mat &imageAmplit
 		{
 			int pixelDistance = (procBuff[1][4*index+1+tofcamInfo.header.offset] << 8) + procBuff[1][4*index+0+tofcamInfo.header.offset];
 			int pixelAmplitude = (procBuff[1][4*index+3+tofcamInfo.header.offset] << 8) + procBuff[1][4*index+2+tofcamInfo.header.offset];
+			double outX = 0.0f, outY = 0.0f, outZ = 0.0f;
+
+			if( pixelDistance < NSL3130_LIMIT_FOR_VALID_DATA ){
+				lensTransform.transformPixel(tofcamInfo.config.roi_xMin+x, tofcamInfo.config.roi_yMin+y, pixelDistance, outX, outY, outZ, sin_angle, cos_angle);
+				pixelDistance = outZ;
+			}
 
 			setDistanceColor(imageDistance, x, y, pixelDistance);
 			if( tofcamInfo.tofcamModeType == AMPLITEDE_DISTANCE_EX_MODE ) 
@@ -635,12 +641,6 @@ int NSL3130AA::getDistanceAmplitude(cv::Mat &imageDistance, cv::Mat &imageAmplit
 			if( bUsedPointCloud ){
 				pcl::PointXYZRGB point;
 				pcl::PointXYZRGB basePoint;
-
-				double outX = 0.0f, outY = 0.0f, outZ = 0.0f;
-
-				if( pixelDistance < NSL3130_LIMIT_FOR_VALID_DATA ){
-					lensTransform.transformPixel(tofcamInfo.config.roi_xMin+x, tofcamInfo.config.roi_yMin+y, pixelDistance, outX, outY, outZ, sin_angle, cos_angle);
-				}
 				
 				point.x = (double)(outX/1000);
 				point.y = (double)(outY/1000);
@@ -700,10 +700,16 @@ int NSL3130AA::getGrayscaled(cv::Mat &imageLidar, bool bUsedPointCloud)
 		for(int x = 0; x < maxWidth; x++)
 		{
 			int pixelGrayscale = ( procBuff[1][2*index+1+tofcamInfo.header.offset] << 8) +  procBuff[1][2*index+0+tofcamInfo.header.offset];		
-
+			double outX = 0.0f, outY = 0.0f, outZ = 0.0f;
+			
 			if( tofcamInfo.tofcamModeType == GRAYSCALE_MODE )
 				setGrayScaledColor( imageLidar, x, y, pixelGrayscale, 2048.0);
 			else{ // DISTANCE_MODE
+
+				if( pixelGrayscale < NSL3130_LIMIT_FOR_VALID_DATA ){
+					lensTransform.transformPixel(tofcamInfo.config.roi_xMin+x, tofcamInfo.config.roi_yMin+y, pixelGrayscale, outX, outY, outZ, sin_angle, cos_angle);
+				}
+				
 				distanceTable[y*NSL3130_IMAGE_WIDTH+x] = pixelGrayscale;
 				setDistanceColor(imageLidar, x, y, pixelGrayscale);
 			}
@@ -723,11 +729,6 @@ int NSL3130AA::getGrayscaled(cv::Mat &imageLidar, bool bUsedPointCloud)
 					pcl::PointXYZRGB point;
 					pcl::PointXYZRGB basePoint;
 
-					double outX = 0.0f, outY = 0.0f, outZ = 0.0f;
-
-					if( pixelGrayscale < NSL3130_LIMIT_FOR_VALID_DATA ){
-						lensTransform.transformPixel(tofcamInfo.config.roi_xMin+x, tofcamInfo.config.roi_yMin+y, pixelGrayscale, outX, outY, outZ, sin_angle, cos_angle);
-					}
 					
 					point.x = (double)(outX/1000);
 					point.y = (double)(outY/1000);
@@ -1832,7 +1833,7 @@ void NSL3130AA::drawHistogram(cv::Mat &bgr_image)
 	cv::equalizeHist(grayImg, hist_img);
 	cv::cvtColor(hist_img, bgr_image, cv::COLOR_GRAY2BGR);
 
-#if 1
+#if 0
 	cv::Mat lab_image;
 	cv::cvtColor(bgr_image, lab_image, cv::COLOR_BGR2Lab);
 
@@ -2070,7 +2071,8 @@ bool NSL3130AA::Capture( void** output, int timeout )
 			tmChk.setEnd();
 			tmChk.printTime("reSize");
 
-			drawHistogram(resizeFrame);
+			if( GRAYSCALE_MODE != tofcamInfo.tofcamModeType && DISTANCE_GRAYSCALE_MODE != tofcamInfo.tofcamModeType )
+				drawHistogram(resizeFrame);
 			
 			tofcamImage.frameMat = &resizeFrame;
 			tofcamImage.distMat = &resizeDist;		
@@ -2258,20 +2260,21 @@ NSL3130AA::NSL3130AA( std::string ipaddr )
 	
 	initializeTofcam660(tofcamInfo.control_sock);
 
-#ifdef _WINDOWS
-	unsigned threadID;
-	hThread = (HANDLE)_beginthreadex(NULL, 0, &NSL3130AA::rxWrapper, this, 0, &threadID);
-
 	double psdAngle = 0.0f; //seobi psd angle 0'
 	sin_angle = sin(psdAngle*PI/180.0);
 	cos_angle = cos(psdAngle*PI/180.0);
 
-	tofcamInfo.usedPointCloud = 1;
-	lensTransform.initLensDistortionTable(STANDARD_FIELD);
-	
+	lensTransform.initLensDistortionTable(STANDARD_FIELD);	// WIDE_FIELD(110), STANDARD_FIELD(90), NARROW_FIELD(50)
+
+#ifdef _WINDOWS
+	unsigned threadID;
+	hThread = (HANDLE)_beginthreadex(NULL, 0, &NSL3130AA::rxWrapper, this, 0, &threadID);
+
+	tofcamInfo.usedPointCloud = 1;	
 	point_cloud_ptr = pcbVis();
 	viewer = rgbVis(point_cloud_ptr);
 #else
+	tofcamInfo.usedPointCloud = 0;	
 	pthread_create(&threadID, NULL, NSL3130AA::rxWrapper, this);
 #endif
 }

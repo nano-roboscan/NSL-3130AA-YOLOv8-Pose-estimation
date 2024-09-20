@@ -374,6 +374,7 @@ private:
 	void *rxTofcam660(void *arg);
 	void rxSocket(uint8_t *socketbuff, int buffLen);
 	void keyProc();
+	LensTransform  lensTransform;
 
 #ifdef _WINDOWS
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcbVis();
@@ -391,7 +392,6 @@ private:
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr;
 	pcl::visualization::PCLVisualizer::Ptr viewer;
 
-	LensTransform  lensTransform;
 #else
 	int rxSerial(uint8_t *socketbuff, int buffLen, bool addQue);
 	int flushRx(void);

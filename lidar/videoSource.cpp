@@ -393,12 +393,17 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions &
 #endif
 
 	// draw people count
-	std::string cntCaption = cv::format("%d", camOpt.detectingCnt);
+	std::string cntCaption = cv::format("%d/ ", camOpt.detectingCnt-camOpt.nonDetectingCnt);
 	if( camOpt.detectingCnt > 9 )
-		putText(drawMat, cntCaption.c_str(), cv::Point(display_width-50, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 0));
+		putText(drawMat, cntCaption.c_str(), cv::Point(display_width-100, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 0));
 	else
-		putText(drawMat, cntCaption.c_str(), cv::Point(display_width-30, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 0));
+		putText(drawMat, cntCaption.c_str(), cv::Point(display_width-80, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 0));
 
+	std::string nonCntCaption = cv::format("%d", camOpt.nonDetectingCnt);
+	if( camOpt.detectingCnt > 9 )
+		putText(drawMat, nonCntCaption.c_str(), cv::Point(display_width-50, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(144, 144, 144));
+	else
+		putText(drawMat, nonCntCaption.c_str(), cv::Point(display_width-30, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(144, 144, 144));
 
 	// title & info 
 	cv::Mat viewInfoUpper(VIEW_INFO_UPPER_SIZE, drawMat.cols, CV_8UC3, cv::Scalar(0,0,0));

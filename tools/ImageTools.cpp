@@ -126,10 +126,7 @@ void ImageTools::drawPose(std::vector<YoloPose::Person> &detections, cv::Mat &im
         std::string infoString = std::to_string(item.score);
         cv::Size textSize = cv::getTextSize(infoString, cv::QT_FONT_NORMAL, 1, 1, nullptr);
         cv::Rect textBox(item.box.x, item.box.y - 40, textSize.width + 10, textSize.height + 20);
-
-		bool dropPerson = false;
-
-		
+	
 		cv::Point2d center_shoulder;
 		center_shoulder.x = item.kp[left_shoulder_position].position.x + (item.kp[right_shoulder_position].position.x - item.kp[left_shoulder_position].position.x)/2 ;
 		center_shoulder.y = item.kp[left_shoulder_position].position.y;
@@ -137,7 +134,6 @@ void ImageTools::drawPose(std::vector<YoloPose::Person> &detections, cv::Mat &im
 		cv::Point2d center_hip;
 		center_hip.x = item.kp[left_hip_position].position.x + (item.kp[right_hip_position].position.x - item.kp[left_hip_position].position.x)/2 ;
 		center_hip.y = item.kp[left_hip_position].position.y;
-
 
 		if( availableCenterPosition(center_shoulder, camOpt ) || availableCenterPosition(center_hip, camOpt ) )
 		{
@@ -158,16 +154,35 @@ void ImageTools::drawPose(std::vector<YoloPose::Person> &detections, cv::Mat &im
 void ImageTools::draw(std::vector<YoloPose::Person> &detections, cv::Mat &image, CaptureOptions &camOpt) {
     auto textColor = cv::Scalar(255, 255, 255);
     auto boxColor = cv::Scalar(0, 255, 0);
+    auto boxColorGray = cv::Scalar(114, 114, 114);
 	int thickness = 2;
 
     for (YoloPose::Person &item: detections) {
-        cv::rectangle(image, item.box, boxColor, thickness);
+
 
         std::string infoString = std::to_string(item.score);
         cv::Size textSize = cv::getTextSize(infoString, cv::QT_FONT_NORMAL, 1, 1, nullptr);
         cv::Rect textBox(item.box.x, item.box.y - 40, textSize.width + 10, textSize.height + 20);
 
-        cv::rectangle(image, textBox, boxColor, cv::FILLED);
+		cv::Point2d center_shoulder;
+		center_shoulder.x = item.kp[left_shoulder_position].position.x + (item.kp[right_shoulder_position].position.x - item.kp[left_shoulder_position].position.x)/2 ;
+		center_shoulder.y = item.kp[left_shoulder_position].position.y;
+		
+		cv::Point2d center_hip;
+		center_hip.x = item.kp[left_hip_position].position.x + (item.kp[right_hip_position].position.x - item.kp[left_hip_position].position.x)/2 ;
+		center_hip.y = item.kp[left_hip_position].position.y;
+
+		if( availableCenterPosition(center_shoulder, camOpt ) || availableCenterPosition(center_hip, camOpt ) )
+		{
+			cv::rectangle(image, textBox, boxColor, cv::FILLED);
+			cv::rectangle(image, item.box, boxColor, thickness);
+		}
+		else{
+			cv::rectangle(image, textBox, boxColorGray, cv::FILLED);
+			cv::rectangle(image, item.box, boxColorGray, thickness);
+			camOpt.nonDetectingCnt++;
+		}
+
         cv::putText(image, infoString, cv::Point(item.box.x + 5, item.box.y - 10), cv::FONT_HERSHEY_DUPLEX, 1, textColor, 1, 0);
     }
 }
@@ -176,18 +191,30 @@ void ImageTools::draw(std::vector<YoloPose::Person> &detections, cv::Mat &image,
 void ImageTools::draw(std::vector<YoloDet::Detection> &detections, cv::Mat &image, CaptureOptions &camOpt) {
     auto textColor = cv::Scalar(255, 255, 255);
     auto boxColor = cv::Scalar(0, 255, 0);
+    auto boxColorGray = cv::Scalar(114, 114, 114);
 	int thickness = 2;
 
     for (YoloDet::Detection &item: detections) {
         cv::Rect box = item.box;
-
-        cv::rectangle(image, box, boxColor, thickness);
-
         std::string infoString = std::to_string(item.confidence).substr(0, 4);
         cv::Size textSize = cv::getTextSize(infoString, cv::FONT_HERSHEY_DUPLEX, 1, 1, nullptr);
         cv::Rect textBox(box.x, box.y - 40, textSize.width + 10, textSize.height + 20);
 
-        cv::rectangle(image, textBox, boxColor, cv::FILLED);
+		cv::Point2d center_box;
+		center_box.x = box.x + box.width/2;
+		center_box.y = box.y + box.height/2;
+
+		if( availableCenterPosition(center_box, camOpt ) )
+		{
+			cv::rectangle(image, textBox, boxColor, cv::FILLED);
+			cv::rectangle(image, box, boxColor, thickness);
+		}
+		else{
+			cv::rectangle(image, textBox, boxColorGray, cv::FILLED);
+			cv::rectangle(image, box, boxColorGray, thickness);
+			camOpt.nonDetectingCnt++;
+		}
+
         cv::putText(image, infoString, cv::Point(box.x + 5, box.y - 10), cv::FONT_HERSHEY_DUPLEX, 1, textColor, 1, 0);
     }
 }
