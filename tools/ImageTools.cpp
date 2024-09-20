@@ -115,6 +115,40 @@ bool ImageTools::availableCenterPosition(cv::Point2d center, CaptureOptions &cam
 }
 
 
+bool ImageTools::availableTwoPosition(cv::Point2d centerUpper, cv::Point2d centerLower, CaptureOptions &camOpt)
+{
+	int xpos_upper = centerUpper.x/2;
+	int ypos_upper = centerUpper.y/2;
+	int dist_pos_upper = ypos_upper*LIDAR_IMAGE_WIDTH + xpos_upper;
+
+	int xpos_lower = centerLower.x/2;
+	int ypos_lower = centerLower.y/2;
+	int dist_pos_lower = ypos_lower*LIDAR_IMAGE_WIDTH + xpos_lower;
+
+	bool detection = false;
+
+	if( camOpt.detectDistance == 0 ) return true;
+
+	for(int y_idx = dist_pos_upper; y_idx <= dist_pos_lower; y_idx += LIDAR_IMAGE_WIDTH )
+	{
+		if( y_idx >= (LIDAR_IMAGE_WIDTH * LIDAR_IMAGE_HEIGHT) ){
+			printf("y size over = %d\n", y_idx);
+			break;
+		}
+
+		int distance_mm = camOpt.pDistanceTable[y_idx];
+		if( distance_mm <= camOpt.detectDistance ){
+			detection = true;
+			break;
+		}
+	}
+
+
+	return detection;
+}
+
+
+
 void ImageTools::drawPose(std::vector<YoloPose::Person> &detections, cv::Mat &image, CaptureOptions &camOpt) {
     auto textColor = cv::Scalar(255, 255, 255);
     auto boxColor = cv::Scalar(0, 255, 0);
@@ -135,7 +169,7 @@ void ImageTools::drawPose(std::vector<YoloPose::Person> &detections, cv::Mat &im
 		center_hip.x = item.kp[left_hip_position].position.x + (item.kp[right_hip_position].position.x - item.kp[left_hip_position].position.x)/2 ;
 		center_hip.y = item.kp[left_hip_position].position.y;
 
-		if( availableCenterPosition(center_shoulder, camOpt ) || availableCenterPosition(center_hip, camOpt ) )
+		if( availableTwoPosition(center_shoulder, center_hip, camOpt ) )
 		{
 			cv::rectangle(image, textBox, boxColor, cv::FILLED);
 			cv::rectangle(image, item.box, boxColor, thickness);
@@ -172,7 +206,9 @@ void ImageTools::draw(std::vector<YoloPose::Person> &detections, cv::Mat &image,
 		center_hip.x = item.kp[left_hip_position].position.x + (item.kp[right_hip_position].position.x - item.kp[left_hip_position].position.x)/2 ;
 		center_hip.y = item.kp[left_hip_position].position.y;
 
-		if( availableCenterPosition(center_shoulder, camOpt ) || availableCenterPosition(center_hip, camOpt ) )
+//		cv::line(image, cv::Point(center_shoulder), cv::Point(center_hip), cv::Scalar(70, 70, 70), 2, cv::LINE_AA);
+
+		if( availableTwoPosition(center_shoulder, center_hip, camOpt ) )
 		{
 			cv::rectangle(image, textBox, boxColor, cv::FILLED);
 			cv::rectangle(image, item.box, boxColor, thickness);
@@ -200,11 +236,17 @@ void ImageTools::draw(std::vector<YoloDet::Detection> &detections, cv::Mat &imag
         cv::Size textSize = cv::getTextSize(infoString, cv::FONT_HERSHEY_DUPLEX, 1, 1, nullptr);
         cv::Rect textBox(box.x, box.y - 40, textSize.width + 10, textSize.height + 20);
 
-		cv::Point2d center_box;
-		center_box.x = box.x + box.width/2;
-		center_box.y = box.y + box.height/2;
+		cv::Point2d center_upper;
+		center_upper.x = box.x + box.width/2;
+		center_upper.y = box.y + box.height/4;
 
-		if( availableCenterPosition(center_box, camOpt ) )
+		cv::Point2d center_lower;
+		center_lower.x = box.x + box.width/2;
+		center_lower.y = box.y + box.height/2;
+
+//		cv::line(image, cv::Point(center_upper), cv::Point(center_lower), cv::Scalar(70, 70, 70), 2, cv::LINE_AA);
+
+		if( availableTwoPosition(center_upper, center_lower, camOpt ) )
 		{
 			cv::rectangle(image, textBox, boxColor, cv::FILLED);
 			cv::rectangle(image, box, boxColor, thickness);

@@ -127,25 +127,7 @@ int YoloDet::detect(cv::Mat &mat, CaptureOptions &camOpt)
 		ImageTools::draw(detections, mat, camOpt);
 	}
 	else{ // YOLO_V4_DETECTION_TYPE
-#if 0
-		cv::dnn::DetectionModel model = cv::dnn::DetectionModel(net);
-		model.setInputParams(1 / 255.0, model512Shape, cv::Scalar(), true);
 
-		std::vector<int> classIds;
-		std::vector<float> scores;
-		std::vector<cv::Rect> boxes;
-		model.detect(mat, classIds, scores, boxes, modelScoreThreshold, modelNMSThreshold);
-
-		for (int idx = 0; idx < classIds.size() && classIds[idx] == 0 ; ++idx)
-		{
-			Detection result;
-			result.class_id = classIds[idx];
-			result.confidence = scores[idx];
-			result.box = boxes[idx];
-					
-			detections.push_back(result);
-		}
-#else	
 		cv::dnn::blobFromImage(mat, blob, 1.0 / 255.0, model512Shape, cv::Scalar(), true, false, CV_32F);
 		net.setInput(blob);
 		net.forward(outputs, net.getUnconnectedOutLayersNames());
@@ -191,7 +173,7 @@ int YoloDet::detect(cv::Mat &mat, CaptureOptions &camOpt)
 				detections.push_back(result);
 			}
         }
-#endif
+
 		ImageTools::draw(detections, mat, camOpt);
 		
 	}

@@ -40,6 +40,7 @@ public :
     static void draw(std::vector<YoloPose::Person> &detections, cv::Mat &image, CaptureOptions &camOpt);
     static void draw(std::vector<YoloDet::Detection> &detections, cv::Mat &image, CaptureOptions &camOpt);
 	static bool availableCenterPosition(cv::Point2d center, CaptureOptions &camOpt);
+	static bool availableTwoPosition(cv::Point2d centerUpper, cv::Point2d centerLower, CaptureOptions &camOpt);
 
 };
 
