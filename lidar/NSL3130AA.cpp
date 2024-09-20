@@ -2018,7 +2018,6 @@ bool NSL3130AA::Capture( void** output, int timeout )
 		if( GET_BUFF_CNT(tofcamBuff, NSL3130_ETH_BUFF_SIZE) > 0 ){
 			tmChk.setEnd();
 			tmChk.printTime("RxTime");
-
 			tmChk.setBegin();
 
 			cv::Mat image(NSL3130_IMAGE_HEIGHT, NSL3130_IMAGE_WIDTH, CV_8UC3, Scalar(255,255,255));	
@@ -2051,8 +2050,8 @@ bool NSL3130AA::Capture( void** output, int timeout )
 
 			tmChk.setEnd();
 			tmChk.printTime("RxConvert");
-
 			tmChk.setBegin();
+
 			static cv::Mat resizeDist, resizeFrame;
 
 			if( tofcamInfo.rotate_90 != 0 )
@@ -2070,9 +2069,15 @@ bool NSL3130AA::Capture( void** output, int timeout )
 
 			tmChk.setEnd();
 			tmChk.printTime("reSize");
+			tmChk.setBegin();
 
-			if( GRAYSCALE_MODE != tofcamInfo.tofcamModeType && DISTANCE_GRAYSCALE_MODE != tofcamInfo.tofcamModeType )
+			if( GRAYSCALE_MODE != tofcamInfo.tofcamModeType && 
+				AMPLITEDE_DISTANCE_MODE != tofcamInfo.tofcamModeType && 
+				DISTANCE_GRAYSCALE_MODE != tofcamInfo.tofcamModeType )
 				drawHistogram(resizeFrame);
+
+			tmChk.setEnd();
+			tmChk.printTime("histogram");
 			
 			tofcamImage.frameMat = &resizeFrame;
 			tofcamImage.distMat = &resizeDist;		

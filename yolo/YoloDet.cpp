@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "timeCheck.h"
 
 #ifdef DEEP_LEARNING
 const int NUM_CLASSES = 1;
@@ -158,7 +159,7 @@ int YoloDet::detect(cv::Mat &mat, CaptureOptions &camOpt)
                 }
             }
         }
-		
+
         for (int c = 0; c < NUM_CLASSES; c++)
         {
             cv::dnn::NMSBoxes(boxes[c], scores[c], 0.0, modelNMSThreshold, indices[c]);
@@ -173,9 +174,8 @@ int YoloDet::detect(cv::Mat &mat, CaptureOptions &camOpt)
 				detections.push_back(result);
 			}
         }
-
-		ImageTools::draw(detections, mat, camOpt);
 		
+		ImageTools::draw(detections, mat, camOpt);
 	}
 
 
