@@ -400,7 +400,7 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions &
 		putText(drawMat, cntCaption.c_str(), cv::Point(display_width-80, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 0));
 
 	std::string nonCntCaption = cv::format("%d", camOpt.nonDetectingCnt);
-	if( camOpt.detectingCnt > 9 )
+	if( camOpt.nonDetectingCnt > 9 )
 		putText(drawMat, nonCntCaption.c_str(), cv::Point(display_width-50, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(144, 144, 144));
 	else
 		putText(drawMat, nonCntCaption.c_str(), cv::Point(display_width-30, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(144, 144, 144));
