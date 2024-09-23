@@ -593,7 +593,7 @@ int NSL3130AA::getDistanceAmplitude(cv::Mat &imageDistance, cv::Mat &imageAmplit
 		maxHeight <<= 1;
 	}
 
-	memset(distanceTable, 0, sizeof(distanceTable));
+	memset(&catesianTable, 0, sizeof(catesianTable));
 
 //	printf("width = %d height = %d/%d hdr = %d\r\n", tofcamInfo.header.width, tofcamInfo.header.height, maxHeight, tofcamInfo.config.hdr_mode);
 #ifdef _WINDOWS
@@ -611,6 +611,14 @@ int NSL3130AA::getDistanceAmplitude(cv::Mat &imageDistance, cv::Mat &imageAmplit
 			if( pixelDistance < NSL3130_LIMIT_FOR_VALID_DATA ){
 				lensTransform.transformPixel(tofcamInfo.config.roi_xMin+x, tofcamInfo.config.roi_yMin+y, pixelDistance, outX, outY, outZ, sin_angle, cos_angle);
 				pixelDistance = outZ;
+				catesianTable.x_pos[y*NSL3130_IMAGE_WIDTH+x] = outX;
+				catesianTable.y_pos[y*NSL3130_IMAGE_WIDTH+x] = outY;
+				catesianTable.z_pos[y*NSL3130_IMAGE_WIDTH+x] = outZ;
+			}
+			else{
+				catesianTable.x_pos[y*NSL3130_IMAGE_WIDTH+x] = 0;
+				catesianTable.y_pos[y*NSL3130_IMAGE_WIDTH+x] = 0;
+				catesianTable.z_pos[y*NSL3130_IMAGE_WIDTH+x] = 0;
 			}
 
 			setDistanceColor(imageDistance, x, y, pixelDistance);
@@ -621,11 +629,8 @@ int NSL3130AA::getDistanceAmplitude(cv::Mat &imageDistance, cv::Mat &imageAmplit
 			else 
 				setAmplitudeColor(imageAmplitude, x, y, pixelAmplitude);
 
-			distanceTable[y*NSL3130_IMAGE_WIDTH+x] = pixelDistance;
-
-
 			if(stepY==2){
-				distanceTable[(y+1)*NSL3130_IMAGE_WIDTH+x] = pixelDistance;
+				catesianTable.z_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = pixelDistance;
 
 				if( tofcamInfo.tofcamModeType == AMPLITEDE_DISTANCE_EX_MODE ) 
 					setGrayScaledColor(imageAmplitude, x, y+1, pixelAmplitude, maxAmplitudeValue);
@@ -689,7 +694,7 @@ int NSL3130AA::getGrayscaled(cv::Mat &imageLidar, bool bUsedPointCloud)
 		maxHeight <<= 1;
 	}
 
-	memset(distanceTable, 0, sizeof(distanceTable));
+	memset(&catesianTable, 0, sizeof(catesianTable));
 	//	printf("width = %d height = %d/%d hdr = %d\r\n", tofcamInfo.header.width, tofcamInfo.header.height, maxHeight, tofcamInfo.config.hdr_mode);
 #ifdef _WINDOWS
 	point_cloud_ptr->clear();
@@ -708,9 +713,17 @@ int NSL3130AA::getGrayscaled(cv::Mat &imageLidar, bool bUsedPointCloud)
 
 				if( pixelGrayscale < NSL3130_LIMIT_FOR_VALID_DATA ){
 					lensTransform.transformPixel(tofcamInfo.config.roi_xMin+x, tofcamInfo.config.roi_yMin+y, pixelGrayscale, outX, outY, outZ, sin_angle, cos_angle);
+					pixelGrayscale = outZ;
+					catesianTable.x_pos[y*NSL3130_IMAGE_WIDTH+x] = outX;
+					catesianTable.y_pos[y*NSL3130_IMAGE_WIDTH+x] = outY;
+					catesianTable.z_pos[y*NSL3130_IMAGE_WIDTH+x] = outZ;
 				}
-				
-				distanceTable[y*NSL3130_IMAGE_WIDTH+x] = pixelGrayscale;
+				else{
+					catesianTable.x_pos[y*NSL3130_IMAGE_WIDTH+x] = 0;
+					catesianTable.y_pos[y*NSL3130_IMAGE_WIDTH+x] = 0;
+					catesianTable.z_pos[y*NSL3130_IMAGE_WIDTH+x] = 0;
+				}
+
 				setDistanceColor(imageLidar, x, y, pixelGrayscale);
 			}
 
@@ -718,7 +731,7 @@ int NSL3130AA::getGrayscaled(cv::Mat &imageLidar, bool bUsedPointCloud)
 				if( tofcamInfo.tofcamModeType == GRAYSCALE_MODE )
 					setGrayScaledColor( imageLidar, x, y+1, pixelGrayscale, 2048.0);
 				else{
-					distanceTable[(y+1)*NSL3130_IMAGE_WIDTH+x] = pixelGrayscale;
+					catesianTable.z_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = pixelGrayscale;
 					setDistanceColor(imageLidar, x, y+1, pixelGrayscale);
 				}
 			}
@@ -2081,7 +2094,7 @@ bool NSL3130AA::Capture( void** output, int timeout )
 			
 			tofcamImage.frameMat = &resizeFrame;
 			tofcamImage.distMat = &resizeDist;		
-			tofcamImage.pDistanceTable = distanceTable;
+			tofcamImage.pCatesianTable = &catesianTable;
 			tofcamImage.isRotate = tofcamInfo.rotate_90;
 			break;
 

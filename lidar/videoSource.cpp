@@ -103,6 +103,7 @@ void print_help()
 	printf("-modelType : 0:Yolo8-pose, 1:Yolo8-pose-detection, 2:Yolov8-detection, 3:Yolov4-csp\n");
 	printf("-dualBeam : 0:off, 1:6Mhz, 2:3Mhz\n");
 	printf("-deepLearning : 0:off, 1:on(amplitude : overflow off)\n");
+	printf("-detectDistance : 0:unlimit, N(mili meter)\n");
 }
 
 
@@ -497,7 +498,7 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions &
 		if( isRotate90() == false ) dist_pos = tofcam_YPos*getVideoWidth() + tofcam_XPos;
 		else dist_pos = tofcam_YPos*getVideoHeight() + tofcam_XPos;
 
-		dist_caption = cv::format("X:%d, Y:%d, %s", tofcam_XPos, tofcam_YPos, getDistanceString(camOpt.pDistanceTable[dist_pos]).c_str());
+		dist_caption = cv::format("X:%d, Y:%d, %s", tofcam_XPos, tofcam_YPos, getDistanceString(camOpt.pCatesianTable->z_pos[dist_pos]).c_str());
 	}
 	else if( distStringCap.length() > 0 ){
 		dist_caption = distStringCap;
@@ -577,7 +578,7 @@ bool videoSource::captureLidar( int timeout, CaptureOptions &camOpt )
 		camOpt.isRotate = camImage->isRotate;
 		camOpt.frameMat = camImage->frameMat;
 		camOpt.distMat = camImage->distMat;
-		camOpt.pDistanceTable = camImage->pDistanceTable;
+		camOpt.pCatesianTable = camImage->pCatesianTable;
 
 		localFileTest = camImage->localFileTest;
 		if( localFileTest != 0 ){

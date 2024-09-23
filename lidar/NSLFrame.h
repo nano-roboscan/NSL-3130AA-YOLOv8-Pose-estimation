@@ -75,12 +75,19 @@ enum tofcamMode_{
 };
 
 
-typedef struct ImageFrame_{
-	void	*frameMat;
-	void	*distMat;
-	int	   *pDistanceTable;	
-	int		isRotate;
+typedef struct catesianTable_{
+	int 	x_pos[LIDAR_IMAGE_WIDTH*LIDAR_IMAGE_HEIGHT];
+	int 	y_pos[LIDAR_IMAGE_WIDTH*LIDAR_IMAGE_HEIGHT];
+	int 	z_pos[LIDAR_IMAGE_WIDTH*LIDAR_IMAGE_HEIGHT];
+}CatesianTable;
 
+
+typedef struct ImageFrame_{
+	void			*frameMat;
+	void			*distMat;
+	CatesianTable	*pCatesianTable;	
+
+	int		isRotate;
 	int 	localFileTest;
 	int 	localFileTotalCnt;
 	char 	localFileName[300];
@@ -110,7 +117,7 @@ typedef struct CaptureOptions_{
 	int	dualbeamState;
 
 	int		isRotate;
-	int 	*pDistanceTable;
+	CatesianTable	*pCatesianTable;	
 	void	*frameMat;
 	void	*distMat;
 

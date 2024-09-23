@@ -105,7 +105,7 @@ bool ImageTools::availableCenterPosition(cv::Point2d center, CaptureOptions &cam
 	int xpos = center.x/2;
 	int ypos = center.y/2;
 	int dist_pos = ypos*LIDAR_IMAGE_WIDTH + xpos;
-	int distance_mm = camOpt.pDistanceTable[dist_pos];
+	int distance_mm = camOpt.pCatesianTable->z_pos[dist_pos];
 
 	if( camOpt.detectDistance == 0 || distance_mm <= camOpt.detectDistance ){
 		return true;
@@ -136,7 +136,7 @@ bool ImageTools::availableTwoPosition(cv::Point2d centerUpper, cv::Point2d cente
 			break;
 		}
 
-		int distance_mm = camOpt.pDistanceTable[y_idx];
+		int distance_mm = camOpt.pCatesianTable->z_pos[y_idx];
 		if( distance_mm <= camOpt.detectDistance ){
 			detection = true;
 			break;

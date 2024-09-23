@@ -269,8 +269,6 @@ typedef enum
   COMMAND_SEND_FIRMWARE_UPDATE = 200							 ///<Send firmware update file
 }TOFCAM660_CAMMAND_LIST;
 
-
-
 /**
  * MIPI CSI and V4L2 camera capture using GStreamer and `nvarguscamerasrc` or `v4l2src` elements.
  * gstCamera supports both MIPI CSI cameras and V4L2-compliant devices like USB webcams.
@@ -417,9 +415,10 @@ private:
 	TOFCAM660_DATABUF	tofcamBuff;
 	int					exit_thtread;
 
-	int 				distanceTable[NSL3130_IMAGE_WIDTH*NSL3130_IMAGE_HEIGHT];
 	uint8_t 			procBuff[2][NSL3130_BUFF_SIZE];
 	uint8_t 			response[2][NSL3130_BUFF_SIZE];
+
+	CatesianTable		catesianTable;
 
 	std::vector<cv::Vec3b> colorVector;
 
