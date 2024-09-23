@@ -148,11 +148,10 @@ videoSource *videoSource::initAppCfg(int argc, char **argv, CaptureOptions &camO
 	char *ipAddr = find_char_arg(argc, argv, (char *)"ipaddr", (char *)"192.168.0.220");	
 
 	camOpt.lidarType = find_int_arg(argc, argv, (char *)"-nslType", NSL3130_TYPE); // 0 : NSL1110AA, 1 : NSL3130AA
-	camOpt.inputSize = find_int_arg(argc, argv, (char *)"-inputSize", 0); // 0 : 320, 1 : 416
-	camOpt.detectThreshold = find_float_arg(argc, argv, (char *)"-thresHold", 0);	// 0: defined YoloPose.h, N: user defined
+	camOpt.detectThreshold = find_float_arg(argc, argv, (char *)"-thresHold", 0);	// 0: defined YoloPose.h, N: user defined (.6, .4)
 
 	camOpt.captureType = find_int_arg(argc, argv, (char *)"-captureType", 1);//0 ~ 2
-	camOpt.integrationTime = find_int_arg(argc, argv, (char *)"-intTime", 1500);//800;
+	camOpt.integrationTime = find_int_arg(argc, argv, (char *)"-intTime", 1000);//800;
 	camOpt.grayIntegrationTime = find_int_arg(argc, argv, (char *)"-grayintTime", 1500);//100;
 	camOpt.maxDistance = find_int_arg(argc, argv, (char *)"-maxDistance", 12500);
 	camOpt.minAmplitude = find_int_arg(argc, argv, (char *)"-amplitudeMin", 50);
@@ -170,16 +169,12 @@ videoSource *videoSource::initAppCfg(int argc, char **argv, CaptureOptions &camO
 	camOpt.interferenceUseLashValueEnable = find_int_arg(argc, argv, (char *)"-interferenceEnable", 0);
 	camOpt.interferenceLimit = find_int_arg(argc, argv, (char *)"-interferenceLimit", 0);
 
-
 	camOpt.dualbeamState = find_int_arg(argc, argv, (char *)"-dualBeam", 0);	// 0:off, 1:6Mhz, 2:3Mhz
 	camOpt.hdr_mode = find_int_arg(argc, argv, (char *)"-hdrMode", 0);		// 0:off, 1:spatial, 2:temporal
 	camOpt.deeplearning = find_int_arg(argc, argv, (char *)"-deepLearning", 0);	// 0:off, 1:on(amplitude : overflow off)
 	camOpt.modelType = find_int_arg(argc, argv, (char *)"-modelType", 0);		// 0:Yolo8-pose, 1:Yolo8-pose-detection, 2:Yolov8-detection, 3:Yolov4-csp
 
-	if( camOpt.inputSize == 0 ) camOpt.inputSize = 320;
-	else if( camOpt.inputSize == 1 ) camOpt.inputSize = 416;
-
-	if( camOpt.detectThreshold > 1 ) camOpt.detectThreshold /= 100.0f;
+	if( camOpt.detectThreshold > 1 ) camOpt.detectThreshold = 0;
 
 	if( camOpt.captureType < 0 || camOpt.captureType > 2 ) camOpt.captureType = 1;
 	if( camOpt.maxDistance == 0 ) camOpt.maxDistance = 12500;
@@ -326,13 +321,94 @@ void videoSource::initDeepLearning( CaptureOptions &camOpt )
 			cv::Mat initImage(V4_MODEL_WIDTH, V4_MODEL_HEIGHT, CV_8UC3, cv::Scalar(255,255,255)); 
 			yoloDet->init("../data/yolov4-csp.weights", "../data/yolov4-csp.cfg", camOpt.detectThreshold, camOpt.modelType); // 8fps
 			setCameraSize(V4_MODEL_WIDTH, V4_MODEL_HEIGHT);
-			//setCameraSize(512, 384);
 			yoloDet->detect(initImage, camOpt);
 		}
 	}
 #endif	
 }
 
+void embed_image(cv::Mat source, cv::Mat dest, int dx, int dy)
+{
+    int x,y,k;
+    for(k = 0; k < source.channels(); ++k){
+        for(y = 0; y < source.rows; ++y){
+            for(x = 0; x < source.cols; ++x){
+                float val = source.at<cv::Vec3b>(y, x)[k];
+				dest.at<cv::Vec3b>(dy + y, dx + x)[k] = (uchar)val;
+            }
+        }
+    }
+}
+
+cv::Mat resize_image(cv::Mat im, int cols, int rows)	// new_w = 512 new_h = 384
+{
+    cv::Mat resized(rows, cols, im.type());
+    cv::Mat part(im.rows, cols, im.type());
+	
+    int r, c, k;
+    float w_scale = (float)(im.cols - 1) / (cols - 1);
+    float h_scale = (float)(im.rows - 1) / (rows - 1);
+    for(k = 0; k < im.channels(); ++k){
+        for(r = 0; r < im.rows; ++r){
+            for(c = 0; c < cols; ++c){
+                float val = 0;
+                if(c == cols-1 || im.cols == 1){
+                     val = im.at<cv::Vec3b>(r, im.cols - 1)[k];
+                } else {
+                    float sx = c*w_scale;
+                    int ix = (int) sx;
+                    float dx = sx - ix;
+                    val = (1 - dx) * im.at<cv::Vec3b>(r, ix)[k] + dx * im.at<cv::Vec3b>(r, ix + 1)[k];
+                }
+                part.at<cv::Vec3b>(r, c)[k] = (uchar)val;
+            }
+        }
+    }
+    for(k = 0; k < im.channels(); ++k){
+        for(r = 0; r < rows; ++r){
+            float sy = r*h_scale;
+            int iy = (int) sy;
+            float dy = sy - iy;
+            for(c = 0; c < cols; ++c){
+                float val = (1-dy) * part.at<cv::Vec3b>(iy, c)[k];
+                resized.at<cv::Vec3b>(r, c)[k] = (uchar)val;
+            }
+            if(r == rows-1 || im.rows == 1) continue;
+            for(c = 0; c < cols; ++c){
+                float val = dy * part.at<cv::Vec3b>(iy + 1, c)[k];
+                resized.at<cv::Vec3b>(r, c)[k] += (uchar)val;
+            }
+        }
+    }
+
+    return resized;
+}
+
+
+cv::Mat letterbox_image(cv::Mat im, int cols, int rows)
+{
+    int new_cols = im.cols;
+    int new_rows = im.rows;
+
+    if (im.cols == cols && im.rows == rows) return im;
+	
+    if (((float)cols / im.cols) < ((float)rows / im.rows)) {
+        new_cols = cols;
+        new_rows = (im.rows * cols) / im.cols;
+    }
+    else {
+        new_rows = rows;
+        new_cols = (im.cols * rows) / im.rows;
+    }
+
+    cv::Mat resized = resize_image(im, new_cols, new_rows);
+    cv::Mat boxed(rows, cols, im.type());
+
+	boxed.setTo(cv::Scalar(.5, .5, .5));
+    embed_image(resized, boxed, (cols - new_cols) / 2, (rows - new_rows) / 2);
+	
+    return boxed;
+}
 
 int videoSource::deepLearning( cv::Mat &imageLidar, CaptureOptions &camOpt )
 {
@@ -450,13 +526,13 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions &
 
 		mouse_ypos -= VIEW_INFO_UPPER_SIZE;
 
-		if( mouse_xpos < getWidth() )
+		if( mouse_xpos < MODEL_WIDTH )
 		{
 			int x_limit_left = mouse_xpos >= 10 ? 10 : mouse_xpos;
-			int x_limit_right = mouse_xpos <= (getWidth()-10) ? 10 : getWidth()-mouse_xpos;
+			int x_limit_right = mouse_xpos <= (MODEL_WIDTH-10) ? 10 : MODEL_WIDTH-mouse_xpos;
 			
 			int y_limit_left = mouse_ypos >= 10 ? 10 : mouse_ypos;
-			int y_limit_right = mouse_ypos <= (getHeight()-10) ? 10 : getHeight()-mouse_ypos;
+			int y_limit_right = mouse_ypos <= (MODEL_HEIGHT-10) ? 10 : MODEL_HEIGHT-mouse_ypos;
 
 //				printf("x = %d, %d :: y = %d, %d\n", x_limit_left, x_limit_right, y_limit_left, y_limit_right);
 			
@@ -466,16 +542,16 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions &
 			if( isRotate90() == false )
 				tofcam_XPos = mouse_xpos/width_div;
 			else
-				tofcam_YPos = (getWidth()-mouse_xpos)/width_div;
+				tofcam_YPos = (MODEL_WIDTH-mouse_xpos)/width_div;
 				
 		}
 		else{
 
-			int x_limit_left = mouse_xpos >= getWidth()+10 ? 10 : mouse_xpos-getWidth();
-			int x_limit_right = mouse_xpos <= getWidth()+(getWidth()-10) ? 10 : (getWidth()*2)-mouse_xpos;
+			int x_limit_left = mouse_xpos >= MODEL_WIDTH+10 ? 10 : mouse_xpos-MODEL_WIDTH;
+			int x_limit_right = mouse_xpos <= MODEL_WIDTH+(MODEL_WIDTH-10) ? 10 : (MODEL_WIDTH*2)-mouse_xpos;
 			
 			int y_limit_left = mouse_ypos >= 10 ? 10 : mouse_ypos;
-			int y_limit_right = mouse_ypos <= (getHeight()-10) ? 10 : getHeight()-mouse_ypos;
+			int y_limit_right = mouse_ypos <= (MODEL_HEIGHT-10) ? 10 : MODEL_HEIGHT-mouse_ypos;
 			
 //				printf("x = %d, %d :: y = %d, %d\n", x_limit_left, x_limit_right, y_limit_left, y_limit_right);
 
@@ -483,9 +559,9 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions &
 			cv::line(drawMat, cv::Point(mouse_xpos, mouse_ypos-y_limit_left), cv::Point(mouse_xpos, mouse_ypos+y_limit_right), cv::Scalar(255, 255, 0), 2);
 
 			if( isRotate90() == false )
-				tofcam_XPos = (mouse_xpos-getWidth())/width_div;
+				tofcam_XPos = (mouse_xpos-MODEL_WIDTH)/width_div;
 			else
-				tofcam_YPos = (getWidth()-(mouse_xpos-getWidth()))/width_div;
+				tofcam_YPos = (MODEL_WIDTH-(mouse_xpos-MODEL_WIDTH))/width_div;
 		}
 
 		if( isRotate90() == false )
@@ -495,8 +571,8 @@ void videoSource::drawCaption(cv::Mat grayMat, cv::Mat distMat, CaptureOptions &
 
 		int dist_pos;
 		
-		if( isRotate90() == false ) dist_pos = tofcam_YPos*getVideoWidth() + tofcam_XPos;
-		else dist_pos = tofcam_YPos*getVideoHeight() + tofcam_XPos;
+		if( isRotate90() == false ) dist_pos = tofcam_YPos*LIDAR_IMAGE_WIDTH + tofcam_XPos;
+		else dist_pos = tofcam_YPos*LIDAR_IMAGE_HEIGHT + tofcam_XPos;
 
 		dist_caption = cv::format("X:%d, Y:%d, %s", tofcam_XPos, tofcam_YPos, getDistanceString(camOpt.pCatesianTable->z_pos[dist_pos]).c_str());
 	}
