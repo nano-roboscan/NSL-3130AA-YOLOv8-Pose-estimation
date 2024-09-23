@@ -614,11 +614,21 @@ int NSL3130AA::getDistanceAmplitude(cv::Mat &imageDistance, cv::Mat &imageAmplit
 				catesianTable.x_pos[y*NSL3130_IMAGE_WIDTH+x] = outX;
 				catesianTable.y_pos[y*NSL3130_IMAGE_WIDTH+x] = outY;
 				catesianTable.z_pos[y*NSL3130_IMAGE_WIDTH+x] = outZ;
+				if(stepY==2){
+					catesianTable.x_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = outX;
+					catesianTable.y_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = outY;
+					catesianTable.z_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = outZ;
+				}
 			}
 			else{
 				catesianTable.x_pos[y*NSL3130_IMAGE_WIDTH+x] = 0;
 				catesianTable.y_pos[y*NSL3130_IMAGE_WIDTH+x] = 0;
 				catesianTable.z_pos[y*NSL3130_IMAGE_WIDTH+x] = 0;
+				if(stepY==2){
+					catesianTable.x_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = 0;
+					catesianTable.y_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = 0;
+					catesianTable.z_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = 0;
+				}
 			}
 
 			setDistanceColor(imageDistance, x, y, pixelDistance);
@@ -630,7 +640,6 @@ int NSL3130AA::getDistanceAmplitude(cv::Mat &imageDistance, cv::Mat &imageAmplit
 				setAmplitudeColor(imageAmplitude, x, y, pixelAmplitude);
 
 			if(stepY==2){
-				catesianTable.z_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = pixelDistance;
 
 				if( tofcamInfo.tofcamModeType == AMPLITEDE_DISTANCE_EX_MODE ) 
 					setGrayScaledColor(imageAmplitude, x, y+1, pixelAmplitude, maxAmplitudeValue);
@@ -717,11 +726,21 @@ int NSL3130AA::getGrayscaled(cv::Mat &imageLidar, bool bUsedPointCloud)
 					catesianTable.x_pos[y*NSL3130_IMAGE_WIDTH+x] = outX;
 					catesianTable.y_pos[y*NSL3130_IMAGE_WIDTH+x] = outY;
 					catesianTable.z_pos[y*NSL3130_IMAGE_WIDTH+x] = outZ;
+					if(stepY==2){
+						catesianTable.x_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = outX;
+						catesianTable.y_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = outY;
+						catesianTable.z_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = outZ;
+					}
 				}
 				else{
 					catesianTable.x_pos[y*NSL3130_IMAGE_WIDTH+x] = 0;
 					catesianTable.y_pos[y*NSL3130_IMAGE_WIDTH+x] = 0;
 					catesianTable.z_pos[y*NSL3130_IMAGE_WIDTH+x] = 0;
+					if(stepY==2){
+						catesianTable.x_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = 0;
+						catesianTable.y_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = 0;
+						catesianTable.z_pos[(y+1)*NSL3130_IMAGE_WIDTH+x] = 0;
+					}
 				}
 
 				setDistanceColor(imageLidar, x, y, pixelGrayscale);
