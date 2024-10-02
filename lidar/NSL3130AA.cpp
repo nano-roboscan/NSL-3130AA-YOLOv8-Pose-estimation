@@ -138,6 +138,7 @@ static int maxAmplitudeValue = 2897;
 static int maxValidValue = 15000;
 
 static const int indexAmplitudeFactorColor = NSL3130_NUM_COLORS / maxAmplitudeValue;
+static const double logBase = 512;
 
 static uint8_t initialCode660[][100]={	
 //	 | ------- start marker --------| |--- length(opcode+data) -----| |-- opcode--| |------- data feild -----------| |-------- end marker --------|
@@ -436,6 +437,16 @@ void NSL3130AA::setGrayScaledColor(cv::Mat &imageLidar, int x, int y, int value,
 }
 
 
+void NSL3130AA::setLogBaseColor(cv::Mat &imageLidar, int x, int y, int value, double end_range )
+{
+//	int color = (int)(value/end_range);
+	int color = value * (255.0/end_range);
+
+	imageLidar.at<Vec3b>(y, x)[0] = color;
+	imageLidar.at<Vec3b>(y, x)[1] = color;
+	imageLidar.at<Vec3b>(y, x)[2] = color; 
+}
+
 int NSL3130AA::setDistanceColor(cv::Mat &imageLidar, int x, int y, int value )
 {
 	if( value == NSL3130_LOW_AMPLITUDE )
@@ -635,7 +646,7 @@ int NSL3130AA::getDistanceAmplitude(cv::Mat &imageDistance, cv::Mat &imageAmplit
 			if( tofcamInfo.tofcamModeType == AMPLITEDE_DISTANCE_EX_MODE ) 
 				setGrayScaledColor(imageAmplitude, x, y, pixelAmplitude, maxAmplitudeValue);
 			else if( tofcamInfo.tofcamModeType == DISTANCE_GRAYSCALE_MODE )
-				setGrayScaledColor(imageAmplitude, x, y, pixelAmplitude, 2048.0);
+				setGrayScaledColor(imageAmplitude, x, y, pixelAmplitude, maxAmplitudeValue);
 			else 
 				setAmplitudeColor(imageAmplitude, x, y, pixelAmplitude);
 
@@ -644,7 +655,7 @@ int NSL3130AA::getDistanceAmplitude(cv::Mat &imageDistance, cv::Mat &imageAmplit
 				if( tofcamInfo.tofcamModeType == AMPLITEDE_DISTANCE_EX_MODE ) 
 					setGrayScaledColor(imageAmplitude, x, y+1, pixelAmplitude, maxAmplitudeValue);
 				else if( tofcamInfo.tofcamModeType == DISTANCE_GRAYSCALE_MODE )
-					setGrayScaledColor(imageAmplitude, x, y+1, pixelAmplitude, 2048.0);
+					setGrayScaledColor(imageAmplitude, x, y+1, pixelAmplitude, maxAmplitudeValue);
 				else 
 					setAmplitudeColor(imageAmplitude, x, y+1, pixelAmplitude);
 
@@ -2102,12 +2113,12 @@ bool NSL3130AA::Capture( void** output, int timeout )
 			tmChk.setEnd();
 			tmChk.printTime("reSize");
 			tmChk.setBegin();
-
+#if 1
 			if( GRAYSCALE_MODE != tofcamInfo.tofcamModeType && 
 				AMPLITEDE_DISTANCE_MODE != tofcamInfo.tofcamModeType && 
 				DISTANCE_GRAYSCALE_MODE != tofcamInfo.tofcamModeType )
 				drawHistogram(resizeFrame);
-
+#endif
 			tmChk.setEnd();
 			tmChk.printTime("histogram");
 			

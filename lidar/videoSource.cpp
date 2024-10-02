@@ -154,7 +154,7 @@ videoSource *videoSource::initAppCfg(int argc, char **argv, CaptureOptions &camO
 	camOpt.integrationTime = find_int_arg(argc, argv, (char *)"-intTime", 1000);//800;
 	camOpt.grayIntegrationTime = find_int_arg(argc, argv, (char *)"-grayintTime", 1500);//100;
 	camOpt.maxDistance = find_int_arg(argc, argv, (char *)"-maxDistance", 12500);
-	camOpt.minAmplitude = find_int_arg(argc, argv, (char *)"-amplitudeMin", 50);
+	camOpt.minAmplitude = find_int_arg(argc, argv, (char *)"-minAmplitude", 50);
 	camOpt.detectDistance = find_int_arg(argc, argv, (char *)"-detectDistance", 0);
 
 	camOpt.edgeThresHold = find_int_arg(argc, argv, (char *)"-edgeThresHold", 0);

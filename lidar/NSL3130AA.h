@@ -344,6 +344,7 @@ private:
 	void setGrayScaledColor(cv::Mat &imageLidar, int x, int y, int value, double end_range );
 	int setDistanceColor(cv::Mat &imageLidar, int x, int y, int value );
 	void setAmplitudeColor(cv::Mat &imageLidar, int x, int y, int value );
+	void setLogBaseColor(cv::Mat &imageLidar, int x, int y, int value, double end_range );
 	int getDistanceAmplitude(cv::Mat &imageDistance, cv::Mat &imageAmplitude, bool bUsedPointCloud);
 	int getGrayscaled(cv::Mat &imageLidar, bool bUsedPointCloud);
 	int sendToDev(SOCKET sock, uint8_t *pData, int nLen, int expectedLen = 0);
