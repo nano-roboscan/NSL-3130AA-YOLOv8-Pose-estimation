@@ -153,15 +153,11 @@ videoSource *createApp(int argc, char **argv, CaptureOptions &camOpt)
 	camOpt.minAmplitude = vidSrc->find_int_arg(argc, argv, "-minAmplitude", 50);
 	camOpt.detectDistance = vidSrc->find_int_arg(argc, argv, "-detectDistance", 0);
 
-	camOpt.edgeThresHold = vidSrc->find_int_arg(argc, argv, "-edgeThresHold", 0);
-	camOpt.medianFilterSize = vidSrc->find_int_arg(argc, argv, "-medianFilterSize", 0);
-	camOpt.medianFilterIterations = vidSrc->find_int_arg(argc, argv, "-medianIter", 0);
-	camOpt.gaussIteration = vidSrc->find_int_arg(argc, argv, "-gaussIter", 0);
-
 	camOpt.medianFilterEnable = vidSrc->find_int_arg(argc, argv, "-medianFilterEnable", 0);
 	camOpt.averageFilterEnable = vidSrc->find_int_arg(argc, argv, "-averageFilterEnable", 0);
 	camOpt.temporalFilterFactorActual = vidSrc->find_int_arg(argc, argv, "-temporalFactor", 0);
 	camOpt.temporalFilterThreshold = vidSrc->find_int_arg(argc, argv, "-temporalThresHold", 0);
+	camOpt.edgeThresHold = vidSrc->find_int_arg(argc, argv, "-edgeThresHold", 0);
 	camOpt.interferenceUseLashValueEnable = vidSrc->find_int_arg(argc, argv, "-interferenceEnable", 0);
 	camOpt.interferenceLimit = vidSrc->find_int_arg(argc, argv, "-interferenceLimit", 0);
 
@@ -177,9 +173,6 @@ videoSource *createApp(int argc, char **argv, CaptureOptions &camOpt)
 	if( camOpt.integrationTime == 0 ) camOpt.integrationTime = 800;
 	if( camOpt.grayIntegrationTime == 0 ) camOpt.grayIntegrationTime = 100;
 	if( camOpt.minAmplitude == 0 ) camOpt.minAmplitude = 50;
-	if( camOpt.medianFilterSize < 0 || camOpt.medianFilterSize > 99 ) camOpt.medianFilterSize = 0;
-	if( camOpt.medianFilterIterations < 0 || camOpt.medianFilterIterations > 10000 ) camOpt.medianFilterIterations = 0;
-	if( camOpt.gaussIteration < 0 || camOpt.gaussIteration > 10000 ) camOpt.gaussIteration = 0;
 	if( camOpt.edgeThresHold < 0 || camOpt.edgeThresHold > 10000 ) camOpt.edgeThresHold = 0;
 	
 	camOpt.nslDevConfig.lidarAngle = 0;

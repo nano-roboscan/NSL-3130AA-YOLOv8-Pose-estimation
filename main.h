@@ -39,15 +39,12 @@ typedef struct CaptureOptions_{
 	int integrationTime;
 	int grayIntegrationTime;
 	int minAmplitude;
-	int edgeThresHold;	
-	int medianFilterSize;
-	int medianFilterIterations;	
-	int gaussIteration;
 
 	int medianFilterEnable;
 	int averageFilterEnable;
 	int	temporalFilterFactorActual;
 	int	temporalFilterThreshold;
+	int edgeThresHold;	
 	int	interferenceUseLashValueEnable;
 	int	interferenceLimit;
 
