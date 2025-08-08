@@ -28,7 +28,6 @@
 #include <opencv2/highgui.hpp>
 #include "YoloDet.h"
 #include "YoloPose.h"
-#include "NSLFrame.h"
 
 #ifdef DEEP_LEARNING
 

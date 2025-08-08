@@ -20,11 +20,65 @@
 #ifndef YOLOV8_MAIN_H
 #define YOLOV8_MAIN_H
 
-#include "YoloDet.h"
-#include "YoloPose.h"
-#include "ImageTools.h"
+#include <opencv2/opencv.hpp>
+#include "nanolib.h"
+
+#define HAVE_CV_CUDA
+#define DEEP_LEARNING
 
 
+#define YOLO_V8_POSE_TYPE				0
+#define YOLO_V8_POSE_DETECTION_TYPE		1
+#define YOLO_V8_DETECTION_TYPE			2
+#define YOLO_V4_DETECTION_TYPE			3
+
+
+typedef struct CaptureOptions_{
+	// lidar parameter	
+	int captureType;
+	int integrationTime;
+	int grayIntegrationTime;
+	int minAmplitude;
+	int edgeThresHold;	
+	int medianFilterSize;
+	int medianFilterIterations;	
+	int gaussIteration;
+
+	int medianFilterEnable;
+	int averageFilterEnable;
+	int	temporalFilterFactorActual;
+	int	temporalFilterThreshold;
+	int	interferenceUseLashValueEnable;
+	int	interferenceLimit;
+
+	int	modelType;
+	int deeplearning;
+	int	hdr_mode;
+	int	dualbeamState;
+
+	cv::Mat	frameMat;
+	cv::Mat	distMat;
+	double (*pCatesianTable)[NSL_LIDAR_TYPE_B_HEIGHT][NSL_LIDAR_TYPE_B_WIDTH];
+
+	// deep learning parameter
+	int inputSize;
+	float detectThreshold;
+	float minConfidence;
+	float maxConfidence;
+	float curConfidence;
+
+
+	// display & running parameter	
+	int	fpsCount;
+	int displayFps;
+	int maxDistance;	
+	int detectingCnt;
+	int nonDetectingCnt;
+	int detectDistance;
+	
+	NslConfig	nslDevConfig;
+
+}CaptureOptions;
 
 
 #endif //YOLOV8_MAIN_H

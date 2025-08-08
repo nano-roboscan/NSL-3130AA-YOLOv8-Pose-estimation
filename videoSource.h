@@ -23,9 +23,6 @@
 #ifndef __VIDEO_SOURCE_H__
 #define __VIDEO_SOURCE_H__
 
-#include "NSLFrame.h"
-
-
 #include <opencv2/opencv.hpp>
 //#include <opencv2/dnn.hpp>
 #include <opencv2/highgui.hpp>
@@ -37,28 +34,16 @@
 #include <vector>
 #include <chrono>
 
-#include "lens_transform.h"
 #include "YoloPose.h"
 #include "YoloDet.h"
 
+#include "main.h"
+
+
 class videoSource
 {
-protected:
-	videoSource();
-
 private:
 
-	static void del_arg(int argc, char **argv, int index);
-	static int find_arg(int argc, char* argv[], char *arg);
-	static int find_int_arg(int argc, char **argv, char *arg, int def);
-	static float find_float_arg(int argc, char **argv, char *arg, float def);
-	static char *find_char_arg(int argc, char **argv, char *arg, char *def);
-	static void callback_mouse_click(int event, int x, int y, int flags, void* user_data);
-	static videoSource* Create( int type, char *ipaddr );	
-
-	
-	void getMouseEvent( int *mouse_xpos, int *mouse_ypos );
-	void mouse_click_func(int event, int x, int y);
 
 	std::string distStringCap;
 	std::string nonDistStringCap;
@@ -68,22 +53,30 @@ private:
 	std::chrono::steady_clock::time_point fpsTime;
 
 	clock_t beginTime, endTime ;
-
+	int DLWidth;
+	int DLHeight;
+	
 	std::atomic<int> x_start, y_start;
 #ifdef DEEP_LEARNING
 	YoloPose *yoloPose;
 	YoloDet  *yoloDet;
 #endif
-	int localFileTest;
-	int localFileTotalCnt;
-	int captureTotalCnt;
-	int detectTotalCnt;
-	int nonDetectTotalCnt;
-	char *localFileName;
+	NslPCD pcdData;
 
 public:
-	static videoSource * initAppCfg(int argc, char **argv, CaptureOptions &camOpt);
-	void setLidarOption(int netType, CaptureOptions &camOpt);
+	videoSource();
+	~videoSource();
+
+	void del_arg(int argc, char **argv, int index);
+	int find_arg(int argc, char* argv[], char *arg);
+	int find_int_arg(int argc, char **argv, const char *arg, int def);
+	float find_float_arg(int argc, char **argv, const char *arg, float def);
+	const char *find_char_arg(int argc, char **argv, const char *arg, const char *def);
+	void callback_mouse_click(int event, int x, int y, int flags, void* user_data);
+	void getMouseEvent( int *mouse_xpos, int *mouse_ypos );
+	void mouse_click_func(int event, int x, int y);
+	void setLidarOption(CaptureOptions &camOpt);
+	void setMatrixColor(cv::Mat image, int x, int y, NslOption::NslVec3b color);
 	bool captureLidar( int timeout, CaptureOptions &camOpt );
 	int prockey(CaptureOptions &camOpt);
 	void stopLidar();
@@ -96,24 +89,19 @@ public:
 	 * Create videoSource interface from a videoOptions struct that's already been filled out.
 	 * It's expected that the supplied videoOptions already contain a valid resource URI.
 	 */
-	virtual ~videoSource();
-	virtual bool Capture( void** image, int timeout=3000 ) = 0;
-	virtual void startCaptureCommand( int netType, CaptureOptions &camOpt) = 0;
-	virtual void setKey(int cmdKey) = 0;
-	virtual std::string getDistanceString(int distance ) = 0;
-	virtual int getDLWidth() = 0;
-	virtual int getDLHeight() = 0;
-	virtual int getWidth() = 0;
-	virtual int getHeight() = 0;
-	virtual int getVideoWidth() = 0;
-	virtual int getVideoHeight() = 0;	
-	virtual int getWidthDiv() = 0;
-	virtual int getHeightDiv() = 0;
-	virtual void setCameraSize(int width, int height) = 0;
-	virtual bool isRotate90() = 0;	
-	virtual void closeLidar() = 0;
-	virtual std::string getLeftViewName() = 0;
-	virtual void drawPointCloud() = 0;
+	std::string getDistanceString(int distance );
+	int getWidth();
+	int getHeight();
+	int getVideoWidth();
+	int getVideoHeight();	
+	int getWidthDiv();
+	int getHeightDiv();
+	void setCameraSize(int width, int height);
+	std::string getLeftViewName();
+
+	int handle;
 };
+
+videoSource * createApp(int argc, char **argv, CaptureOptions &camOpt);
 
 #endif // __VIDEO_SOURCE_H__

@@ -104,8 +104,7 @@ bool ImageTools::availableCenterPosition(cv::Point2d center, CaptureOptions &cam
 {
 	int xpos = center.x/2;
 	int ypos = center.y/2;
-	int dist_pos = ypos*LIDAR_IMAGE_WIDTH + xpos;
-	int distance_mm = camOpt.pCatesianTable->z_pos[dist_pos];
+	int distance_mm = camOpt.pCatesianTable[OUT_Z][ypos][xpos];
 
 	if( camOpt.detectDistance == 0 || distance_mm <= camOpt.detectDistance ){
 		return true;
@@ -119,24 +118,23 @@ bool ImageTools::availableTwoPosition(cv::Point2d centerUpper, cv::Point2d cente
 {
 	int xpos_upper = centerUpper.x/2;
 	int ypos_upper = centerUpper.y/2;
-	int dist_pos_upper = ypos_upper*LIDAR_IMAGE_WIDTH + xpos_upper;
 
 	int xpos_lower = centerLower.x/2;
 	int ypos_lower = centerLower.y/2;
-	int dist_pos_lower = ypos_lower*LIDAR_IMAGE_WIDTH + xpos_lower;
+//	int dist_pos_lower = ypos_lower*NSL_LIDAR_TYPE_A_WIDTH + xpos_lower;
 
 	bool detection = false;
 
 	if( camOpt.detectDistance == 0 ) return true;
 
-	for(int y_idx = dist_pos_upper; y_idx <= dist_pos_lower; y_idx += LIDAR_IMAGE_WIDTH )
+	for(int y_idx = ypos_upper; y_idx <= ypos_lower; y_idx ++ )
 	{
-		if( y_idx >= (LIDAR_IMAGE_WIDTH * LIDAR_IMAGE_HEIGHT) ){
+		if( y_idx >= NSL_LIDAR_TYPE_A_HEIGHT ){
 			printf("y size over = %d\n", y_idx);
 			break;
 		}
 
-		int distance_mm = camOpt.pCatesianTable->z_pos[y_idx];
+		int distance_mm = camOpt.pCatesianTable[OUT_Z][y_idx][xpos_upper];
 		if( distance_mm <= camOpt.detectDistance ){
 			detection = true;
 			break;
