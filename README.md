@@ -24,6 +24,7 @@ $ wget https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre
 
 ## LINUX compile
 ```
+$ git clone --recurse-submodules https://github.com/nano-roboscan/NSL-3130AA-YOLOv8-Pose-estimation.git
 $ cd NSL-3130AA-YOLOv8-Pose-estimation/
 $ mkdir build
 $ cd build
