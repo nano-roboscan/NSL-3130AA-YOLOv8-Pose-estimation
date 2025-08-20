@@ -662,9 +662,9 @@ void videoSource::stopLidar()
 
 void videoSource::setMatrixColor(Mat image, int x, int y, NslVec3b color)
 {
-	image.at<Vec3b>(y,x)[0] = color[0];
-	image.at<Vec3b>(y,x)[1] = color[1];
-	image.at<Vec3b>(y,x)[2] = color[2];
+	image.at<Vec3b>(y,x)[0] = color.b;
+	image.at<Vec3b>(y,x)[1] = color.g;
+	image.at<Vec3b>(y,x)[2] = color.r;
 }
 
 bool videoSource::captureLidar( int timeout, CaptureOptions &camOpt )
