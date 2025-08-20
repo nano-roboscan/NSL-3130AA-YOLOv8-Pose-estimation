@@ -18,7 +18,7 @@ $ wget https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre
 
 ## Required OpenCV
 ```
-- Required OpenCV 4.7
+- Required OpenCV 4.7 & dnn
 ```
 
 
