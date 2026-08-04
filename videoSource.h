@@ -76,7 +76,7 @@ public:
 	void getMouseEvent( int *mouse_xpos, int *mouse_ypos );
 	void mouse_click_func(int event, int x, int y);
 	void setLidarOption(CaptureOptions &camOpt);
-	void setMatrixColor(cv::Mat image, int x, int y, NslOption::NslVec3b color);
+	void setMatrixColor(cv::Mat image, int x, int y, NslVec3b color);
 	bool captureLidar( int timeout, CaptureOptions &camOpt );
 	int prockey(CaptureOptions &camOpt);
 	void stopLidar();
